@@ -26,7 +26,12 @@
       xp_bottle: A + 'items/experience_bottle.png',
       book: A + 'items/book.png'
     },
-    mobs: { steve: A + 'mobs/steve_face.png' },
+    mobs: {
+      steve: A + 'mobs/steve_face.png',
+      creeper: A + 'mobs/creeper_face.png',
+      zombie: A + 'mobs/zombie_face.png',
+      skeleton: A + 'mobs/skeleton_face.png'
+    },
     ui: {
       heart: A + 'ui/heart.png',
       heartHalf: A + 'ui/heart_half.png',
@@ -56,6 +61,26 @@
   var SESSION_LENGTH = 8;
   var XP_PER_LEVEL = 100;
 
+  // Pickaxe progression: index = min(level-1, 4)
+  var PICKAXES = [
+    { src: A + 'items/wood_pickaxe.png', name: 'Holz-Spitzhacke' },
+    { src: A + 'items/stone_pickaxe.png', name: 'Stein-Spitzhacke' },
+    { src: A + 'items/iron_pickaxe.png', name: 'Eisen-Spitzhacke' },
+    { src: A + 'items/gold_pickaxe.png', name: 'Gold-Spitzhacke' },
+    { src: A + 'items/diamond_pickaxe.png', name: 'Diamant-Spitzhacke' }
+  ];
+  function pickaxeForLevel(level) { return PICKAXES[Math.min(level - 1, PICKAXES.length - 1)]; }
+
+  var BOSSES = [
+    { id: 'creeper', name: 'Creeper' },
+    { id: 'zombie', name: 'Zombie' },
+    { id: 'skeleton', name: 'Skelett' }
+  ];
+  var BOSS_HP = 3;
+  var BOSS_XP = 25;
+  var STREAK_BONUS_EVERY = 5;
+  var STREAK_BONUS_XP = 5;
+
   // ---------- State (localStorage) ----------
   var STORAGE_KEY = 'hugos-block-abenteuer-v1';
 
@@ -63,7 +88,7 @@
     return {
       xp: 0,
       inventory: {},
-      stats: { answered: 0, correct: 0, byType: {} },
+      stats: { answered: 0, correct: 0, byType: {}, sessions: 0, bestStreak: 0 },
       mistakes: []
     };
   }
@@ -72,8 +97,13 @@
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return defaultState();
-      var s = JSON.parse(raw);
-      return Object.assign(defaultState(), s);
+      var s = Object.assign(defaultState(), JSON.parse(raw));
+      // Migration: ensure newer stat fields exist
+      var d = defaultState().stats;
+      s.stats = Object.assign(d, s.stats || {});
+      if (s.stats.sessions === undefined) s.stats.sessions = 0;
+      if (s.stats.bestStreak === undefined) s.stats.bestStreak = 0;
+      return s;
     } catch (e) { return defaultState(); }
   }
 
@@ -249,14 +279,34 @@
     session = {
       tasks: genSession(),
       index: 0,
+      phase: 'tasks',
+      boss: BOSSES[state.stats.sessions % BOSSES.length],
+      bossHp: BOSS_HP,
+      bossDefeated: false,
       halfHearts: 10,
       earned: {},
       xpGained: 0,
+      streak: 0,
+      pendingLevelUp: null,
       firstTry: true,
       locked: false
     };
     show('screen-practice');
     renderHUD();
+    renderTask();
+  }
+
+  function genBossTasks(n) {
+    var arr = [];
+    for (var i = 0; i < n; i++) arr.push(Math.random() < 0.5 ? genAdd() : genSub());
+    return arr;
+  }
+
+  function startBoss() {
+    session.phase = 'boss';
+    session.tasks = genBossTasks(BOSS_HP);
+    session.index = 0;
+    session.bossHp = BOSS_HP;
     renderTask();
   }
 
@@ -275,8 +325,13 @@
       else if (hh === 1) slot.appendChild(img(ASSETS.ui.heartHalf));
       hearts.appendChild(slot);
     }
-    // Progress
-    $('hud-progress').textContent = 'Aufgabe ' + (session.index + 1) + ' / ' + session.tasks.length;
+    // Progress + streak
+    if (session.phase === 'boss') {
+      $('hud-progress').textContent = 'Boss-Kampf!';
+    } else {
+      $('hud-progress').textContent = 'Aufgabe ' + (session.index + 1) + ' / ' + session.tasks.length;
+    }
+    $('hud-streak').textContent = session.streak >= 2 ? 'Serie: ' + session.streak : '';
     // XP
     renderXpBar();
   }
@@ -300,6 +355,17 @@
     var t = currentTask();
     session.firstTry = true;
     session.locked = false;
+
+    // Boss area
+    var bossArea = $('boss-area');
+    if (session.phase === 'boss') {
+      bossArea.style.display = 'flex';
+      $('boss-img').src = ASSETS.mobs[session.boss.id];
+      $('boss-name').textContent = session.boss.name;
+      renderBossHearts();
+    } else {
+      bossArea.style.display = 'none';
+    }
 
     $('task-question').textContent = t.question;
     var vis = $('task-visual');
@@ -362,20 +428,52 @@
       btn.classList.add('correct');
       state.stats.correct++;
       state.stats.byType[t.type].correct++;
+
+      // Streak
+      if (session.firstTry) {
+        session.streak++;
+        if (session.streak > state.stats.bestStreak) state.stats.bestStreak = session.streak;
+      }
+
+      var levelBefore = levelOf(state.xp);
       var xp = session.firstTry ? 10 : 5;
-      state.xp += xp;
-      session.xpGained += xp;
+      var bonus = (session.firstTry && session.streak > 0 && session.streak % STREAK_BONUS_EVERY === 0) ? STREAK_BONUS_XP : 0;
+      state.xp += xp + bonus;
+      session.xpGained += xp + bonus;
+      if (levelOf(state.xp) > levelBefore) session.pendingLevelUp = levelOf(state.xp);
 
-      var rewardId = pickReward();
-      state.inventory[rewardId] = (state.inventory[rewardId] || 0) + 1;
-      session.earned[rewardId] = (session.earned[rewardId] || 0) + 1;
-      saveState();
-
-      setTimeout(function () { showReward(rewardId, xp); }, 450);
+      if (session.phase === 'boss') {
+        saveState();
+        session.bossHp--;
+        renderBossHearts();
+        bossHitAnimation();
+        renderHUD();
+        setTimeout(function () {
+          if (session.bossHp <= 0) {
+            session.bossDefeated = true;
+            state.xp += BOSS_XP;
+            session.xpGained += BOSS_XP;
+            state.inventory.apple_golden = (state.inventory.apple_golden || 0) + 1;
+            session.earned.apple_golden = (session.earned.apple_golden || 0) + 1;
+            if (levelOf(state.xp) > levelOf(state.xp - BOSS_XP)) session.pendingLevelUp = levelOf(state.xp);
+            saveState();
+            showBossWin();
+          } else {
+            nextTask();
+          }
+        }, 900);
+      } else {
+        var rewardId = pickReward();
+        state.inventory[rewardId] = (state.inventory[rewardId] || 0) + 1;
+        session.earned[rewardId] = (session.earned[rewardId] || 0) + 1;
+        saveState();
+        setTimeout(function () { showReward(rewardId, xp + bonus, bonus > 0); }, 450);
+      }
     } else {
       btn.classList.add('wrong');
       btn.disabled = true;
       session.firstTry = false;
+      session.streak = 0;
       if (session.halfHearts > 0) session.halfHearts--;
       state.mistakes.push({ type: t.type, task: taskSignature(t), ts: Date.now() });
       if (state.mistakes.length > 200) state.mistakes = state.mistakes.slice(-200);
@@ -392,28 +490,91 @@
     return 'compare:' + t.left + ':' + t.right;
   }
 
+  // ---------- Boss helpers ----------
+  function renderBossHearts() {
+    var c = $('boss-hearts');
+    clear(c);
+    for (var i = 0; i < BOSS_HP; i++) {
+      c.appendChild(img(i < session.bossHp ? ASSETS.ui.heart : ASSETS.ui.heartBg));
+    }
+  }
+
+  function bossHitAnimation() {
+    var b = $('boss-img');
+    b.classList.remove('hit');
+    void b.offsetWidth;
+    b.classList.add('hit');
+  }
+
+  function showBossWin() {
+    $('bosswin-title').textContent = session.boss.name + ' besiegt!';
+    var item = $('bosswin-item');
+    item.classList.remove('pop');
+    void item.offsetWidth;
+    item.classList.add('pop');
+    $('bosswin-text').textContent = '+1 Goldener Apfel  \u00b7  +' + BOSS_XP + ' XP';
+    renderXpBar();
+    showOverlay('overlay-bosswin', true);
+  }
+
+  $('btn-bosswin-next').addEventListener('click', function () {
+    showOverlay('overlay-bosswin', false);
+    maybeLevelUp(showSummary);
+  });
+
+  // ---------- Level-Up ----------
+  var levelUpNext = null;
+
+  function maybeLevelUp(next) {
+    if (session.pendingLevelUp) {
+      var lvl = session.pendingLevelUp;
+      session.pendingLevelUp = null;
+      var p = pickaxeForLevel(lvl);
+      $('levelup-title').textContent = 'Level ' + lvl + '!';
+      var item = $('levelup-item');
+      item.src = p.src;
+      item.classList.remove('pop');
+      void item.offsetWidth;
+      item.classList.add('pop');
+      $('levelup-text').textContent = 'Du hast jetzt die ' + p.name + '!';
+      levelUpNext = next;
+      showOverlay('overlay-levelup', true);
+    } else {
+      next();
+    }
+  }
+
+  $('btn-levelup-next').addEventListener('click', function () {
+    showOverlay('overlay-levelup', false);
+    if (levelUpNext) { var n = levelUpNext; levelUpNext = null; n(); }
+  });
+
   // ---------- Reward overlay ----------
-  function showReward(rewardId, xp) {
+  function showReward(rewardId, xp, withBonus) {
     var item = $('reward-item');
     item.classList.remove('pop');
     item.src = ASSETS.items[rewardId];
     void item.offsetWidth; // restart animation
     item.classList.add('pop');
     $('reward-text').textContent = '+1 ' + ITEM_NAMES[rewardId][0] + '!';
-    $('reward-xp').textContent = '+' + xp + ' XP';
+    $('reward-xp').textContent = '+' + xp + ' XP' + (withBonus ? '  (Serien-Bonus!)' : '');
     renderXpBar();
     showOverlay('overlay-reward', true);
   }
 
   $('btn-reward-next').addEventListener('click', function () {
     showOverlay('overlay-reward', false);
-    nextTask();
+    maybeLevelUp(nextTask);
   });
 
   function nextTask() {
     session.index++;
     if (session.index >= session.tasks.length) {
-      showSummary();
+      if (session.phase === 'tasks') {
+        startBoss();
+      } else {
+        showSummary();
+      }
     } else {
       renderTask();
     }
@@ -481,6 +642,9 @@
 
   // ---------- Summary ----------
   function showSummary() {
+    state.stats.sessions++;
+    saveState();
+
     var items = $('summary-items');
     clear(items);
     var any = false;
@@ -493,8 +657,9 @@
     });
     if (!any) items.appendChild(el('div', null, 'Diesmal keine Items — gleich nochmal!'));
 
-    var total = session.tasks.length;
-    $('summary-stats').textContent = '+' + session.xpGained + ' XP  \u00b7  Level ' + levelOf(state.xp);
+    $('summary-title').textContent = session.bossDefeated ? session.boss.name + ' besiegt!' : 'Geschafft!';
+    $('summary-stats').textContent = '+' + session.xpGained + ' XP  \u00b7  Level ' + levelOf(state.xp) +
+      (session.streak >= 3 ? '  \u00b7  Beste Serie heute: ' + session.streak : '');
     showOverlay('overlay-summary', true);
   }
 
@@ -515,7 +680,10 @@
 
   // ---------- Start screen ----------
   function renderStart() {
-    $('start-level').textContent = 'Level ' + levelOf(state.xp) + '  \u00b7  ' + state.xp + ' XP';
+    var lvl = levelOf(state.xp);
+    $('start-level').textContent = 'Level ' + lvl + '  \u00b7  ' + state.xp + ' XP';
+    $('start-pickaxe').src = pickaxeForLevel(lvl).src;
+    $('start-pickaxe').title = pickaxeForLevel(lvl).name;
     renderGroundStrip();
     renderHotbar();
   }
@@ -622,6 +790,8 @@
     var lines = [
       'Beantwortete Aufgaben: ' + s.answered,
       'Richtig: ' + s.correct + ' (' + acc + ' %)',
+      'Gespielte Runden: ' + s.sessions,
+      'Beste Serie: ' + s.bestStreak,
       'XP gesamt: ' + state.xp + '  \u00b7  Level ' + levelOf(state.xp)
     ];
     Object.keys(s.byType).forEach(function (t) {

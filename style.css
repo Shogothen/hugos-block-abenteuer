@@ -469,4 +469,62 @@ img {
 @media (prefers-reduced-motion: reduce) {
   #reward-item.pop, .overlay .mc-panel { animation: none; }
   .xp-bar .xp-fill-clip { transition: none; }
+  #boss-img.hit, #boss-img { animation: none; }
 }
+
+/* ---------- Stage 2: progression & boss ---------- */
+
+#start-level-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#start-pickaxe { width: 40px; height: 40px; }
+
+.hud-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+#hud-streak {
+  font-size: 15px;
+  color: #FFD83D;
+  text-shadow: 2px 2px 0 #3F3F3F;
+  min-height: 18px;
+}
+
+#boss-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+#boss-img {
+  width: 160px;
+  height: 160px;
+  animation: float-bob 2.4s ease-in-out infinite;
+}
+#boss-img.hit {
+  animation: boss-hit 0.5s ease-out, float-bob 2.4s ease-in-out 0.5s infinite;
+}
+@keyframes boss-hit {
+  0% { transform: translateX(0); filter: brightness(1); }
+  15% { transform: translateX(-14px) rotate(-5deg); filter: brightness(2.2) saturate(0.3); }
+  35% { transform: translateX(12px) rotate(4deg); filter: brightness(2.2) saturate(0.3); }
+  60% { transform: translateX(-7px); filter: brightness(1.4); }
+  100% { transform: translateX(0); filter: brightness(1); }
+}
+#boss-name {
+  font-size: 24px;
+  text-shadow: var(--text-shadow);
+}
+#boss-hearts { display: flex; gap: 4px; }
+#boss-hearts img { width: 32px; height: 32px; }
+
+#levelup-item, #bosswin-item { width: 96px; height: 96px; }
+#levelup-item.pop, #bosswin-item.pop {
+  animation: pop-in 0.45s ease-out, float-bob 2s ease-in-out 0.45s infinite;
+}
+#levelup-title, #bosswin-title { font-size: 30px; }
+#levelup-text, #bosswin-text { font-size: 20px; line-height: 1.5; }

@@ -21,7 +21,10 @@
   <section id="screen-start" class="screen active">
     <h1>Hugos<br>Block-Abenteuer</h1>
     <img id="start-avatar" src="assets/minecraft/mobs/steve_face.png" alt="Hugo">
-    <div id="start-level">Level 1</div>
+    <div id="start-level-row">
+      <img id="start-pickaxe" src="assets/minecraft/items/wood_pickaxe.png" alt="">
+      <div id="start-level">Level 1</div>
+    </div>
     <div class="menu-stack">
       <button id="btn-start-game" class="mc-btn"><span>Spiel starten</span></button>
       <button id="btn-start-inventory" class="mc-btn"><span>Inventar</span></button>
@@ -35,7 +38,10 @@
   <section id="screen-practice" class="screen">
     <div class="hud">
       <div id="hud-hearts" class="hearts"></div>
-      <div id="hud-progress">Aufgabe 1 / 8</div>
+      <div class="hud-center">
+        <div id="hud-progress">Aufgabe 1 / 8</div>
+        <div id="hud-streak"></div>
+      </div>
       <div class="xp-wrap">
         <div id="hud-level-label">Level 1</div>
         <div class="xp-bar">
@@ -45,6 +51,12 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div id="boss-area" style="display:none">
+      <img id="boss-img" src="assets/minecraft/mobs/creeper_face.png" alt="">
+      <div id="boss-name">Creeper</div>
+      <div id="boss-hearts"></div>
     </div>
 
     <div id="task-panel" class="mc-panel">
@@ -106,6 +118,24 @@
       <div id="explain-visual"></div>
       <div id="explain-text"></div>
       <button id="btn-explain-retry" class="mc-btn"><span>Nochmal versuchen</span></button>
+    </div>
+  </div>
+
+  <div id="overlay-levelup" class="overlay">
+    <div class="mc-panel">
+      <div id="levelup-title">Level 2!</div>
+      <img id="levelup-item" src="assets/minecraft/items/stone_pickaxe.png" alt="">
+      <div id="levelup-text"></div>
+      <button id="btn-levelup-next" class="mc-btn"><span>Weiter</span></button>
+    </div>
+  </div>
+
+  <div id="overlay-bosswin" class="overlay">
+    <div class="mc-panel">
+      <div id="bosswin-title">Besiegt!</div>
+      <img id="bosswin-item" src="assets/minecraft/items/apple_golden.png" alt="">
+      <div id="bosswin-text"></div>
+      <button id="btn-bosswin-next" class="mc-btn"><span>Weiter</span></button>
     </div>
   </div>
 
