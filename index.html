@@ -75,12 +75,29 @@
   <!-- ================= BAUSTELLE ================= -->
   <section id="screen-build" class="screen">
     <h2 id="build-title">Baumhaus</h2>
-    <div id="build-progress">0 / 15 Blöcke</div>
+    <div id="build-progress">0 / 30 Blöcke</div>
     <div class="mc-panel build-panel">
       <div id="build-grid" class="build-grid"></div>
     </div>
+    <div class="btn-row">
+      <button id="btn-build-place" class="mc-btn"><span>Bauen!</span></button>
+      <button id="btn-build-creative" class="mc-btn"><span>Kreativ-Modus</span></button>
+    </div>
+    <div id="build-hint" class="build-hint"></div>
     <div id="builds-done"></div>
-    <button id="btn-build-back" class="mc-btn"><span>Zurück</span></button>
+    <button id="btn-build-back" class="mc-btn small"><span>Zurück</span></button>
+  </section>
+
+  <!-- ================= KREATIV-MODUS ================= -->
+  <section id="screen-creative" class="screen">
+    <h2>Kreativ-Modus</h2>
+    <div id="creative-free" class="build-hint">Freie Blöcke: 0</div>
+    <div id="creative-palette" class="creative-palette"></div>
+    <div class="mc-panel build-panel">
+      <div id="creative-grid" class="build-grid creative-grid"></div>
+    </div>
+    <div class="build-hint">Block antippen zum Bauen — nochmal antippen zum Abbauen.</div>
+    <button id="btn-creative-back" class="mc-btn small"><span>Zur Baustelle</span></button>
   </section>
 
   <!-- ================= WELTKARTE ================= -->
@@ -121,7 +138,8 @@
       <div class="btn-row">
         <button id="diff-leicht" class="mc-btn small"><span>Leicht (bis 10)</span></button>
         <button id="diff-mittel" class="mc-btn small"><span>Mittel (bis 20)</span></button>
-        <button id="diff-schwer" class="mc-btn small"><span>Schwer (+ Einmaleins)</span></button>
+        <button id="diff-schwer" class="mc-btn small"><span>Schwer (bis 100)</span></button>
+        <button id="diff-profi" class="mc-btn small"><span>Profi (Einmaleins, Lücken)</span></button>
       </div>
       <div class="btn-row">
         <button id="btn-parent-reset" class="mc-btn small danger"><span>Fortschritt zurücksetzen</span></button>
