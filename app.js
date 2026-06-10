@@ -394,7 +394,11 @@
 
   // ---------- Reward overlay ----------
   function showReward(rewardId, xp) {
-    $('reward-item').src = ASSETS.items[rewardId];
+    var item = $('reward-item');
+    item.classList.remove('pop');
+    item.src = ASSETS.items[rewardId];
+    void item.offsetWidth; // restart animation
+    item.classList.add('pop');
     $('reward-text').textContent = '+1 ' + ITEM_NAMES[rewardId][0] + '!';
     $('reward-xp').textContent = '+' + xp + ' XP';
     renderXpBar();
@@ -512,6 +516,38 @@
   // ---------- Start screen ----------
   function renderStart() {
     $('start-level').textContent = 'Level ' + levelOf(state.xp) + '  \u00b7  ' + state.xp + ' XP';
+    renderGroundStrip();
+    renderHotbar();
+  }
+
+  function renderGroundStrip() {
+    var strip = $('ground-strip');
+    clear(strip);
+    var n = Math.ceil(window.innerWidth / 64) + 1;
+    for (var i = 0; i < n; i++) strip.appendChild(img(ASSETS.blocks.grass));
+  }
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(renderGroundStrip, 150);
+  });
+
+  function renderHotbar() {
+    var bar = $('hotbar');
+    clear(bar);
+    var shown = 0;
+    INV_ORDER.forEach(function (id) {
+      if (shown >= 9) return;
+      var count = state.inventory[id] || 0;
+      if (count > 0) {
+        var slot = el('div', 'inv-slot');
+        slot.appendChild(img(ASSETS.items[id]));
+        slot.appendChild(el('div', 'count', String(count)));
+        bar.appendChild(slot);
+        shown++;
+      }
+    });
   }
 
   $('btn-start-game').addEventListener('click', startSession);

@@ -36,29 +36,19 @@ html, body {
   overflow: hidden;
 }
 
-body {
-  font-family: 'Monocraft', 'Courier New', monospace;
-  color: #fff;
-  background: #000;
-}
-
-/* Dirt background with dark overlay — like the Minecraft menu */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
+/* Dirt background (html) + dark overlay (body) — like the Minecraft menu */
+html {
+  background-color: #2b1d12;
   background-image: url('assets/minecraft/blocks/dirt.png');
   background-repeat: repeat;
   background-size: 64px 64px;
   image-rendering: pixelated;
-  z-index: -2;
 }
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
+
+body {
+  font-family: 'Monocraft', 'Courier New', monospace;
+  color: #fff;
   background: rgba(0, 0, 0, 0.55);
-  z-index: -1;
 }
 
 img {
@@ -90,6 +80,7 @@ img {
   font-size: 22px;
   color: #fff;
   text-shadow: var(--text-shadow);
+  background-color: #8B8B8B;
   background-image: url('assets/minecraft/blocks/stone.png');
   background-size: 32px 32px;
   image-rendering: pixelated;
@@ -100,7 +91,9 @@ img {
   padding: 12px 28px;
   cursor: pointer;
   letter-spacing: 1px;
+  transition: transform 0.06s;
 }
+.mc-btn:active { transform: scale(0.97); }
 .mc-btn:active {
   box-shadow: inset -4px -4px 0 rgba(255, 255, 255, 0.4),
               inset 4px 4px 0 rgba(0, 0, 0, 0.5);
@@ -228,6 +221,7 @@ img {
   top: 0; left: 0;
   height: 20px;
   overflow: hidden;
+  transition: width 0.7s ease-out;
 }
 
 /* ---------- Practice: task panel ---------- */
@@ -423,4 +417,56 @@ img {
   .hud { justify-content: center; }
   .mc-btn.answer { min-width: 140px; min-height: 84px; font-size: 32px; }
   #task-visual img { width: 44px; height: 44px; }
+}
+
+/* ---------- Start screen: ground strip & hotbar ---------- */
+
+#ground-strip {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 64px;
+  display: flex;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+#ground-strip img { width: 64px; height: 64px; flex: 0 0 64px; }
+
+#screen-start { z-index: 1; }
+
+#hotbar {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-bottom: 72px;
+}
+#hotbar .inv-slot { width: 52px; height: 52px; }
+#hotbar .inv-slot img { width: 34px; height: 34px; }
+#hotbar .inv-slot .count { font-size: 14px; right: 4px; bottom: 2px; }
+
+/* ---------- Juice: reward pop & item float ---------- */
+
+@keyframes pop-in {
+  0% { transform: scale(0.2); }
+  70% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+@keyframes float-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+#reward-item.pop {
+  animation: pop-in 0.45s ease-out, float-bob 2s ease-in-out 0.45s infinite;
+}
+.overlay .mc-panel { animation: pop-in 0.25s ease-out; }
+
+/* Slight playful stagger of counted items */
+#task-visual > img:nth-child(even),
+#task-visual .group > img:nth-child(even) { transform: translateY(6px); }
+
+@media (prefers-reduced-motion: reduce) {
+  #reward-item.pop, .overlay .mc-panel { animation: none; }
+  .xp-bar .xp-fill-clip { transition: none; }
 }
