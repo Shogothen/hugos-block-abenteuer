@@ -528,3 +528,56 @@ img {
 }
 #levelup-title, #bosswin-title { font-size: 30px; }
 #levelup-text, #bosswin-text { font-size: 20px; line-height: 1.5; }
+
+/* ---------- Stage 3: world map ---------- */
+
+#screen-worldmap { gap: 24px; justify-content: flex-start; padding-top: 40px; }
+#screen-worldmap h2 { font-size: 30px; text-shadow: var(--text-shadow); }
+
+#biome-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  max-width: 760px;
+}
+
+.biome-tile {
+  font-family: inherit;
+  width: 200px;
+  height: 150px;
+  background-size: 48px 48px;
+  background-repeat: repeat;
+  image-rendering: pixelated;
+  border: 3px solid #000;
+  box-shadow: inset 4px 4px 0 rgba(255, 255, 255, 0.35),
+              inset -4px -4px 0 rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 12px;
+}
+.biome-tile .biome-name {
+  font-size: 24px;
+  color: #fff;
+  text-shadow: var(--text-shadow);
+}
+.biome-tile .biome-status {
+  font-size: 15px;
+  color: #fff;
+  text-shadow: 2px 2px 0 #3F3F3F;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 4px 10px;
+}
+.biome-tile.locked {
+  filter: grayscale(0.85) brightness(0.45);
+  cursor: default;
+}
+.biome-tile.selected {
+  outline: 4px solid #FFD83D;
+  outline-offset: 2px;
+}
+.biome-tile:active:not(.locked) { transform: scale(0.97); }

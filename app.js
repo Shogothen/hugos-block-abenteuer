@@ -13,6 +13,9 @@
       grass: A + 'blocks/grass.png',
       dirt: A + 'blocks/dirt.png',
       stone: A + 'blocks/stone.png',
+      sand: A + 'blocks/sand.png',
+      snowGrass: A + 'blocks/snow_grass.png',
+      netherrack: A + 'blocks/netherrack.png',
       planks: A + 'blocks/planks_oak.png',
       diamondOre: A + 'blocks/diamond_ore.png'
     },
@@ -81,12 +84,25 @@
   var STREAK_BONUS_EVERY = 5;
   var STREAK_BONUS_XP = 5;
 
+  var BIOMES = [
+    { id: 'forest', name: 'Wald', blockKey: 'grass', minLevel: 1 },
+    { id: 'cave', name: 'H\u00f6hle', blockKey: 'stone', minLevel: 2 },
+    { id: 'desert', name: 'W\u00fcste', blockKey: 'sand', minLevel: 3 },
+    { id: 'snow', name: 'Schnee', blockKey: 'snowGrass', minLevel: 4 },
+    { id: 'nether', name: 'Nether', blockKey: 'netherrack', minLevel: 5 }
+  ];
+  function biomeById(id) {
+    for (var i = 0; i < BIOMES.length; i++) if (BIOMES[i].id === id) return BIOMES[i];
+    return BIOMES[0];
+  }
+
   // ---------- State (localStorage) ----------
   var STORAGE_KEY = 'hugos-block-abenteuer-v1';
 
   function defaultState() {
     return {
       xp: 0,
+      biome: 'forest',
       inventory: {},
       stats: { answered: 0, correct: 0, byType: {}, sessions: 0, bestStreak: 0 },
       mistakes: []
@@ -103,6 +119,7 @@
       s.stats = Object.assign(d, s.stats || {});
       if (s.stats.sessions === undefined) s.stats.sessions = 0;
       if (s.stats.bestStreak === undefined) s.stats.bestStreak = 0;
+      if (!s.biome) s.biome = 'forest';
       return s;
     } catch (e) { return defaultState(); }
   }
@@ -254,9 +271,14 @@
   }
 
   // ---------- Screen management ----------
-  var screens = ['screen-start', 'screen-practice', 'screen-inventory', 'screen-parent'];
+  var screens = ['screen-start', 'screen-practice', 'screen-inventory', 'screen-parent', 'screen-worldmap'];
   function show(id) {
     screens.forEach(function (s) { $(s).classList.toggle('active', s === id); });
+    // Practice plays in the selected biome, everything else on classic dirt
+    var block = (id === 'screen-practice')
+      ? ASSETS.blocks[biomeById(state.biome).blockKey]
+      : ASSETS.blocks.dirt;
+    document.documentElement.style.backgroundImage = "url('" + block + "')";
     window.scrollTo(0, 0);
   }
   function showOverlay(id, on) { $(id).classList.toggle('active', on); }
@@ -536,7 +558,11 @@
       item.classList.remove('pop');
       void item.offsetWidth;
       item.classList.add('pop');
-      $('levelup-text').textContent = 'Du hast jetzt die ' + p.name + '!';
+      var msg = 'Du hast jetzt die ' + p.name + '!';
+      for (var bi = 0; bi < BIOMES.length; bi++) {
+        if (BIOMES[bi].minLevel === lvl) msg += ' Neues Biom freigeschaltet: ' + BIOMES[bi].name + '!';
+      }
+      $('levelup-text').textContent = msg;
       levelUpNext = next;
       showOverlay('overlay-levelup', true);
     } else {
@@ -719,8 +745,40 @@
   }
 
   $('btn-start-game').addEventListener('click', startSession);
+  $('btn-start-world').addEventListener('click', function () { renderWorldMap(); show('screen-worldmap'); });
   $('btn-start-inventory').addEventListener('click', function () { renderInventory(); show('screen-inventory'); });
   $('btn-start-parent').addEventListener('click', function () { resetGate(); show('screen-parent'); });
+
+  // ---------- World map ----------
+  function renderWorldMap() {
+    var grid = $('biome-grid');
+    clear(grid);
+    var lvl = levelOf(state.xp);
+    BIOMES.forEach(function (b) {
+      var unlocked = lvl >= b.minLevel;
+      var tile = el('button', 'biome-tile');
+      tile.style.backgroundImage = "url('" + ASSETS.blocks[b.blockKey] + "')";
+      tile.appendChild(el('span', 'biome-name', b.name));
+      if (!unlocked) {
+        tile.classList.add('locked');
+        tile.appendChild(el('span', 'biome-status', 'Ab Level ' + b.minLevel));
+      } else if (state.biome === b.id) {
+        tile.classList.add('selected');
+        tile.appendChild(el('span', 'biome-status', 'Ausgew\u00e4hlt'));
+      } else {
+        tile.appendChild(el('span', 'biome-status', 'Antippen'));
+      }
+      tile.addEventListener('click', function () {
+        if (!unlocked) return;
+        state.biome = b.id;
+        saveState();
+        renderWorldMap();
+      });
+      grid.appendChild(tile);
+    });
+  }
+
+  $('btn-world-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
 
   // ---------- Inventory ----------
   var INV_ORDER = ['diamond', 'emerald', 'gold_ingot', 'iron_ingot', 'apple', 'apple_golden'];
