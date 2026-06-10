@@ -581,3 +581,88 @@ img {
   outline-offset: 2px;
 }
 .biome-tile:active:not(.locked) { transform: scale(0.97); }
+
+/* ---------- Stage 4: Baustelle ---------- */
+
+#screen-build { gap: 20px; justify-content: flex-start; padding-top: 36px; }
+#screen-build h2 { font-size: 30px; text-shadow: var(--text-shadow); }
+#build-progress { font-size: 19px; color: #FFD83D; text-shadow: 2px 2px 0 #3F3F3F; }
+
+.build-panel {
+  width: auto;
+  max-width: 92vw;
+  display: flex;
+  justify-content: center;
+}
+
+.build-grid {
+  display: grid;
+  gap: 2px;
+  justify-content: center;
+}
+.build-cell { position: relative; }
+.build-cell img { width: 100%; height: 100%; display: block; }
+.build-cell.empty {
+  border: 2px dashed rgba(63, 63, 63, 0.5);
+  box-sizing: border-box;
+}
+.build-cell.air { visibility: hidden; }
+
+@keyframes place-pop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.build-cell img.placed-pop { animation: place-pop 0.4s ease-out backwards; }
+.build-cell img.placed-pop:nth-child(1) { animation-delay: 0.05s; }
+
+#builds-done { text-align: center; }
+.builds-done-title { font-size: 18px; text-shadow: var(--text-shadow); margin-bottom: 10px; }
+.builds-done-row { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+.builds-done-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  text-shadow: 2px 2px 0 #3F3F3F;
+}
+.builds-done-item img { width: 40px; height: 40px; }
+
+#builddone-grid { margin: 0 auto; }
+#builddone-title { font-size: 30px; }
+#builddone-text { font-size: 20px; line-height: 1.5; }
+
+#hud-build {
+  font-size: 15px;
+  color: #9CFF9C;
+  text-shadow: 2px 2px 0 #3F3F3F;
+}
+
+.fly-block {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  z-index: 60;
+  pointer-events: none;
+  transition: transform 0.65s cubic-bezier(0.35, 0.8, 0.55, 1), opacity 0.65s;
+}
+
+.parent-reco {
+  font-size: 18px;
+  color: #1a5c1a;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.mc-btn.selected {
+  box-shadow: inset 4px 4px 0 rgba(255, 255, 255, 0.4),
+              inset -4px -4px 0 rgba(0, 0, 0, 0.5),
+              inset 0 0 0 200px rgba(76, 175, 80, 0.4);
+  outline: 3px solid #FFD83D;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .build-cell img.placed-pop { animation: none; }
+  .fly-block { transition: none; opacity: 0 !important; }
+}

@@ -1,6 +1,7 @@
 /* ============================================================
-   Hugos Block-Abenteuer — App-Logik (Stufe 1)
-   Vanilla JS, keine Abhängigkeiten, localStorage.
+   Hugos Block-Abenteuer — App-Logik (Version 4.0)
+   Bau-System, Schwierigkeitsstufen, Fehler-Wiederholung,
+   Boss-Fights, Biome, Progression. Vanilla JS, localStorage.
    ============================================================ */
 
 (function () {
@@ -13,10 +14,16 @@
       grass: A + 'blocks/grass.png',
       dirt: A + 'blocks/dirt.png',
       stone: A + 'blocks/stone.png',
+      cobblestone: A + 'blocks/cobblestone.png',
       sand: A + 'blocks/sand.png',
       snowGrass: A + 'blocks/snow_grass.png',
       netherrack: A + 'blocks/netherrack.png',
+      obsidian: A + 'blocks/obsidian.png',
+      glowstone: A + 'blocks/glowstone.png',
+      brick: A + 'blocks/brick.png',
       planks: A + 'blocks/planks_oak.png',
+      logOak: A + 'blocks/log_oak.png',
+      leavesOak: A + 'blocks/leaves_oak.png',
       diamondOre: A + 'blocks/diamond_ore.png'
     },
     items: {
@@ -44,27 +51,34 @@
     }
   };
 
-  // German names: [singular, plural]
   var ITEM_NAMES = {
     diamond: ['Diamant', 'Diamanten'],
     emerald: ['Smaragd', 'Smaragde'],
     gold_ingot: ['Goldbarren', 'Goldbarren'],
     iron_ingot: ['Eisenbarren', 'Eisenbarren'],
-    apple: ['Apfel', 'Äpfel'],
-    apple_golden: ['Goldener Apfel', 'Goldene Äpfel']
+    apple: ['Apfel', '\u00c4pfel'],
+    apple_golden: ['Goldener Apfel', 'Goldene \u00c4pfel']
+  };
+
+  var BLOCK_NAMES = {
+    leavesOak: 'Eichenlaub',
+    planks: 'Holzbretter',
+    logOak: 'Holzstamm',
+    stone: 'Stein',
+    cobblestone: 'Bruchstein',
+    glowstone: 'Leuchtstein',
+    sand: 'Sand',
+    brick: 'Ziegel',
+    snowGrass: 'Schneeblock',
+    netherrack: 'Netherrack',
+    obsidian: 'Obsidian'
   };
 
   var COUNT_ITEMS = ['diamond', 'emerald', 'apple', 'gold_ingot'];
-  var REWARD_POOL = [
-    { id: 'apple', w: 30 }, { id: 'iron_ingot', w: 25 },
-    { id: 'gold_ingot', w: 20 }, { id: 'emerald', w: 15 },
-    { id: 'diamond', w: 10 }
-  ];
 
   var SESSION_LENGTH = 8;
   var XP_PER_LEVEL = 100;
 
-  // Pickaxe progression: index = min(level-1, 4)
   var PICKAXES = [
     { src: A + 'items/wood_pickaxe.png', name: 'Holz-Spitzhacke' },
     { src: A + 'items/stone_pickaxe.png', name: 'Stein-Spitzhacke' },
@@ -96,14 +110,62 @@
     return BIOMES[0];
   }
 
-  // ---------- State (localStorage) ----------
+  // ---------- Build projects ----------
+  // Rows are top-to-bottom; placement happens bottom-up, left-to-right.
+  var BUILD_PROJECTS = [
+    {
+      id: 'treehouse', name: 'Baumhaus',
+      map: { L: 'leavesOak', P: 'planks', T: 'logOak' },
+      rows: ['LLLLL', 'LPPPL', '.PPP.', '..T..', '..T..']
+    },
+    {
+      id: 'cavehide', name: 'H\u00f6hlen-Versteck',
+      map: { S: 'stone', G: 'glowstone', C: 'cobblestone' },
+      rows: ['SSSSS', 'SG.GS', 'S...S', 'S...S', 'CC.CC']
+    },
+    {
+      id: 'deserttower', name: 'W\u00fcsten-Turm',
+      map: { B: 'brick', S: 'sand' },
+      rows: ['BBBBB', '.SSS.', '.S.S.', '.SSS.', '.S.S.', '.SSS.']
+    },
+    {
+      id: 'snowhut', name: 'Schnee-H\u00fctte',
+      map: { P: 'planks', W: 'snowGrass', G: 'glowstone' },
+      rows: ['..P..', '.PPP.', 'PPPPP', 'W...W', 'W.G.W', 'WW.WW']
+    },
+    {
+      id: 'netherfort', name: 'Nether-Festung',
+      map: { N: 'netherrack', O: 'obsidian', G: 'glowstone' },
+      rows: ['O.O.O', 'OOOOO', 'NG.GN', 'N...N', 'N...N', 'NNNNN']
+    }
+  ];
+
+  // Precompute placement order (bottom-up) and totals
+  BUILD_PROJECTS.forEach(function (p) {
+    p.order = [];
+    for (var r = p.rows.length - 1; r >= 0; r--) {
+      for (var c = 0; c < p.rows[r].length; c++) {
+        var ch = p.rows[r][c];
+        if (ch !== '.') p.order.push({ r: r, c: c, key: p.map[ch] });
+      }
+    }
+    p.total = p.order.length;
+  });
+
+  function currentProject() {
+    return BUILD_PROJECTS[state.build.projectIndex % BUILD_PROJECTS.length];
+  }
+
+  // ---------- State ----------
   var STORAGE_KEY = 'hugos-block-abenteuer-v1';
 
   function defaultState() {
     return {
       xp: 0,
       biome: 'forest',
+      difficulty: 'leicht',
       inventory: {},
+      build: { projectIndex: 0, placed: 0, seen: 0, completed: [] },
       stats: { answered: 0, correct: 0, byType: {}, sessions: 0, bestStreak: 0 },
       mistakes: []
     };
@@ -114,12 +176,11 @@
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return defaultState();
       var s = Object.assign(defaultState(), JSON.parse(raw));
-      // Migration: ensure newer stat fields exist
-      var d = defaultState().stats;
-      s.stats = Object.assign(d, s.stats || {});
-      if (s.stats.sessions === undefined) s.stats.sessions = 0;
-      if (s.stats.bestStreak === undefined) s.stats.bestStreak = 0;
+      var d = defaultState();
+      s.stats = Object.assign(d.stats, s.stats || {});
+      s.build = Object.assign(d.build, s.build || {});
       if (!s.biome) s.biome = 'forest';
+      if (!s.difficulty) s.difficulty = 'leicht';
       return s;
     } catch (e) { return defaultState(); }
   }
@@ -146,11 +207,10 @@
     return a;
   }
   function img(src, cls) {
-    var el = document.createElement('img');
-    el.src = src;
-    el.alt = '';
-    if (cls) el.className = cls;
-    return el;
+    var e = document.createElement('img');
+    e.src = src; e.alt = '';
+    if (cls) e.className = cls;
+    return e;
   }
   function el(tag, cls, text) {
     var e = document.createElement(tag);
@@ -160,30 +220,18 @@
   }
   function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
 
-  function pickReward() {
-    var total = 0, i;
-    for (i = 0; i < REWARD_POOL.length; i++) total += REWARD_POOL[i].w;
-    var r = Math.random() * total;
-    for (i = 0; i < REWARD_POOL.length; i++) {
-      r -= REWARD_POOL[i].w;
-      if (r <= 0) return REWARD_POOL[i].id;
-    }
-    return 'apple';
-  }
-
-  // Distinct numeric options around the correct answer
-  function numericOptions(correct, min, max) {
+  function numericOptions(correct, min, max, step) {
+    step = step || 1;
     var opts = [correct];
-    var candidates = shuffle([correct - 2, correct - 1, correct + 1, correct + 2, correct + 3]);
+    var candidates = shuffle([correct - 2 * step, correct - step, correct + step, correct + 2 * step, correct + 3 * step]);
     for (var i = 0; i < candidates.length && opts.length < 3; i++) {
       var c = candidates[i];
       if (c >= min && c <= max && opts.indexOf(c) === -1) opts.push(c);
     }
-    // Fallback (edges)
     var f = min;
     while (opts.length < 3 && f <= max) {
       if (opts.indexOf(f) === -1) opts.push(f);
-      f++;
+      f += 1;
     }
     return shuffle(opts);
   }
@@ -196,15 +244,17 @@
       type: 'count', item: item, n: n,
       question: 'Wie viele ' + ITEM_NAMES[item][1] + ' siehst du?',
       speak: 'Wie viele ' + ITEM_NAMES[item][1] + ' siehst du?',
-      correct: n,
-      options: numericOptions(n, 1, 10),
-      kind: 'number'
+      correct: n, options: numericOptions(n, 1, 10), kind: 'number'
     };
   }
 
-  function genAdd() {
-    var a = rnd(1, 9);
-    var b = rnd(1, Math.min(9, 10 - a));
+  function genAdd(diff) {
+    var a, b;
+    if (diff === 'leicht') {
+      a = rnd(1, 9); b = rnd(1, Math.min(9, 10 - a));
+    } else {
+      a = rnd(2, 15); b = rnd(2, Math.min(18, 20 - a));
+    }
     var item = pick(COUNT_ITEMS);
     return {
       type: 'add', a: a, b: b, item: item,
@@ -212,14 +262,17 @@
       speak: 'Was ist ' + a + ' plus ' + b + '?',
       equation: a + ' + ' + b + ' = ?',
       correct: a + b,
-      options: numericOptions(a + b, 0, 12),
-      kind: 'number'
+      options: numericOptions(a + b, 0, 22), kind: 'number'
     };
   }
 
-  function genSub() {
-    var a = rnd(3, 10);
-    var b = rnd(1, a - 1);
+  function genSub(diff) {
+    var a, b;
+    if (diff === 'leicht') {
+      a = rnd(3, 10); b = rnd(1, a - 1);
+    } else {
+      a = rnd(5, 20); b = rnd(2, a - 1);
+    }
     var item = pick(COUNT_ITEMS);
     return {
       type: 'sub', a: a, b: b, item: item,
@@ -227,8 +280,7 @@
       speak: 'Was ist ' + a + ' minus ' + b + '?',
       equation: a + ' \u2212 ' + b + ' = ?',
       correct: a - b,
-      options: numericOptions(a - b, 0, 10),
-      kind: 'number'
+      options: numericOptions(a - b, 0, 20), kind: 'number'
     };
   }
 
@@ -236,9 +288,8 @@
     var item = pick(COUNT_ITEMS);
     var left = rnd(1, 9);
     var right;
-    if (Math.random() < 0.2) {
-      right = left;
-    } else {
+    if (Math.random() < 0.2) right = left;
+    else {
       right = rnd(1, 9);
       if (right === left) right = (left < 9) ? left + 1 : left - 1;
     }
@@ -247,34 +298,143 @@
       type: 'compare', item: item, left: left, right: right,
       question: 'Wo sind mehr ' + ITEM_NAMES[item][1] + '?',
       speak: 'Wo sind mehr ' + ITEM_NAMES[item][1] + '? Links, rechts, oder sind es gleich viele?',
-      correct: correct,
-      options: ['links', 'rechts', 'gleich'],
+      correct: correct, options: ['links', 'rechts', 'gleich'],
       labels: { links: 'Links', rechts: 'Rechts', gleich: 'Gleich viele' },
       kind: 'word'
     };
   }
 
-  function genSession() {
-    var plan = shuffle(['count', 'count', 'add', 'add', 'add', 'sub', 'sub', 'compare']);
-    return plan.map(function (t) {
-      if (t === 'count') return genCount();
-      if (t === 'add') return genAdd();
-      if (t === 'sub') return genSub();
-      return genCompare();
-    });
+  function genDouble() {
+    var n = rnd(2, 10);
+    var item = pick(COUNT_ITEMS);
+    return {
+      type: 'double', a: n, b: n, item: item,
+      question: 'Verdopple!',
+      speak: 'Was ist das Doppelte von ' + n + '?',
+      equation: n + ' + ' + n + ' = ?',
+      correct: 2 * n,
+      options: numericOptions(2 * n, 2, 22), kind: 'number'
+    };
   }
 
-  // Expose for automated testing (node / console)
+  function genMissing() {
+    var c = rnd(6, 20);
+    var a = rnd(1, c - 1);
+    return {
+      type: 'missing', a: a, c: c,
+      question: 'Welche Zahl fehlt?',
+      speak: a + ' plus wie viel ist ' + c + '?',
+      equation: a + ' + ? = ' + c,
+      correct: c - a,
+      options: numericOptions(c - a, 0, 20), kind: 'number'
+    };
+  }
+
+  function genMul() {
+    var f = pick([2, 5, 10]);
+    var n = rnd(1, 10);
+    return {
+      type: 'mul', f: f, n: n,
+      question: 'Rechne aus:',
+      speak: 'Was ist ' + f + ' mal ' + n + '?',
+      equation: f + ' \u00b7 ' + n + ' = ?',
+      correct: f * n,
+      options: numericOptions(f * n, 0, 100, f), kind: 'number'
+    };
+  }
+
+  var SESSION_PLANS = {
+    leicht: ['count', 'count', 'add', 'add', 'add', 'sub', 'sub', 'compare'],
+    mittel: ['count', 'add', 'add', 'sub', 'sub', 'double', 'add', 'compare'],
+    schwer: ['count', 'add', 'sub', 'double', 'missing', 'missing', 'mul', 'mul']
+  };
+
+  function genByType(t, diff) {
+    if (t === 'count') return genCount();
+    if (t === 'add') return genAdd(diff);
+    if (t === 'sub') return genSub(diff);
+    if (t === 'compare') return genCompare();
+    if (t === 'double') return genDouble();
+    if (t === 'missing') return genMissing();
+    return genMul();
+  }
+
+  // Recreate a task from a stored mistake signature (review repetition)
+  function taskFromSignature(sig) {
+    var m;
+    if ((m = sig.match(/^(\d+)\+(\d+)$/))) {
+      var a = +m[1], b = +m[2], item = pick(COUNT_ITEMS);
+      return {
+        type: 'add', a: a, b: b, item: item, review: true,
+        question: 'Rechne aus:', speak: 'Was ist ' + a + ' plus ' + b + '?',
+        equation: a + ' + ' + b + ' = ?', correct: a + b,
+        options: numericOptions(a + b, 0, 22), kind: 'number'
+      };
+    }
+    if ((m = sig.match(/^(\d+)-(\d+)$/))) {
+      var a2 = +m[1], b2 = +m[2], item2 = pick(COUNT_ITEMS);
+      return {
+        type: 'sub', a: a2, b: b2, item: item2, review: true,
+        question: 'Rechne aus:', speak: 'Was ist ' + a2 + ' minus ' + b2 + '?',
+        equation: a2 + ' \u2212 ' + b2 + ' = ?', correct: a2 - b2,
+        options: numericOptions(a2 - b2, 0, 20), kind: 'number'
+      };
+    }
+    if ((m = sig.match(/^(\d+)x(\d+)$/))) {
+      var f = +m[1], n = +m[2];
+      return {
+        type: 'mul', f: f, n: n, review: true,
+        question: 'Rechne aus:', speak: 'Was ist ' + f + ' mal ' + n + '?',
+        equation: f + ' \u00b7 ' + n + ' = ?', correct: f * n,
+        options: numericOptions(f * n, 0, 100, f), kind: 'number'
+      };
+    }
+    return null;
+  }
+
+  function genSession(diff, mistakes) {
+    diff = diff || 'leicht';
+    var plan = shuffle(SESSION_PLANS[diff] || SESSION_PLANS.leicht);
+    var tasks = plan.map(function (t) { return genByType(t, diff); });
+
+    // Mistake repetition: up to 2 recent unique mistakes replace random slots
+    if (mistakes && mistakes.length) {
+      var sigs = [];
+      for (var i = mistakes.length - 1; i >= 0 && sigs.length < 2; i--) {
+        var sig = mistakes[i].task;
+        if (sigs.indexOf(sig) === -1) {
+          var rt = taskFromSignature(sig);
+          if (rt) { sigs.push(sig); tasks[rnd(0, tasks.length - 1)] = rt; }
+        }
+      }
+    }
+    return tasks;
+  }
+
+  function taskSignature(t) {
+    if (t.type === 'count') return 'count:' + t.n;
+    if (t.type === 'add' || t.type === 'double') return t.a + '+' + t.b;
+    if (t.type === 'sub') return t.a + '-' + t.b;
+    if (t.type === 'missing') return t.a + '+' + (t.c - t.a);
+    if (t.type === 'mul') return t.f + 'x' + t.n;
+    return 'compare:' + t.left + ':' + t.right;
+  }
+
+  // Expose for automated testing
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { genCount: genCount, genAdd: genAdd, genSub: genSub, genCompare: genCompare, genSession: genSession, numericOptions: numericOptions };
+    module.exports = {
+      genSession: genSession, genCount: genCount, genAdd: genAdd, genSub: genSub,
+      genCompare: genCompare, genDouble: genDouble, genMissing: genMissing, genMul: genMul,
+      taskFromSignature: taskFromSignature, numericOptions: numericOptions,
+      BUILD_PROJECTS: BUILD_PROJECTS
+    };
     return;
   }
 
   // ---------- Screen management ----------
-  var screens = ['screen-start', 'screen-practice', 'screen-inventory', 'screen-parent', 'screen-worldmap'];
+  var screens = ['screen-start', 'screen-practice', 'screen-inventory', 'screen-parent', 'screen-worldmap', 'screen-build'];
   function show(id) {
     screens.forEach(function (s) { $(s).classList.toggle('active', s === id); });
-    // Practice plays in the selected biome, everything else on classic dirt
     var block = (id === 'screen-practice')
       ? ASSETS.blocks[biomeById(state.biome).blockKey]
       : ASSETS.blocks.dirt;
@@ -299,17 +459,20 @@
 
   function startSession() {
     session = {
-      tasks: genSession(),
+      tasks: genSession(state.difficulty, state.mistakes),
       index: 0,
       phase: 'tasks',
       boss: BOSSES[state.stats.sessions % BOSSES.length],
       bossHp: BOSS_HP,
       bossDefeated: false,
       halfHearts: 10,
-      earned: {},
+      earnedBlocks: {},
+      earnedItems: {},
+      buildsFinished: [],
       xpGained: 0,
       streak: 0,
       pendingLevelUp: null,
+      pendingBuildDone: null,
       firstTry: true,
       locked: false
     };
@@ -319,8 +482,8 @@
   }
 
   function genBossTasks(n) {
-    var arr = [];
-    for (var i = 0; i < n; i++) arr.push(Math.random() < 0.5 ? genAdd() : genSub());
+    var arr = [], diff = state.difficulty;
+    for (var i = 0; i < n; i++) arr.push(Math.random() < 0.5 ? genAdd(diff) : genSub(diff));
     return arr;
   }
 
@@ -334,9 +497,8 @@
 
   function currentTask() { return session.tasks[session.index]; }
 
-  // ---------- Rendering: HUD ----------
+  // ---------- HUD ----------
   function renderHUD() {
-    // Hearts
     var hearts = $('hud-hearts');
     clear(hearts);
     for (var i = 0; i < 5; i++) {
@@ -347,15 +509,19 @@
       else if (hh === 1) slot.appendChild(img(ASSETS.ui.heartHalf));
       hearts.appendChild(slot);
     }
-    // Progress + streak
     if (session.phase === 'boss') {
       $('hud-progress').textContent = 'Boss-Kampf!';
     } else {
       $('hud-progress').textContent = 'Aufgabe ' + (session.index + 1) + ' / ' + session.tasks.length;
     }
     $('hud-streak').textContent = session.streak >= 2 ? 'Serie: ' + session.streak : '';
-    // XP
+    renderBuildCounter();
     renderXpBar();
+  }
+
+  function renderBuildCounter() {
+    var p = currentProject();
+    $('hud-build').textContent = p.name + ': ' + state.build.placed + ' / ' + p.total;
   }
 
   function renderXpBar() {
@@ -364,7 +530,7 @@
     $('xp-fill-clip').style.width = Math.round(240 * pct) + 'px';
   }
 
-  // ---------- Rendering: task ----------
+  // ---------- Task rendering ----------
   function renderItemRow(container, item, n, fadedFrom) {
     for (var i = 0; i < n; i++) {
       var im = img(ASSETS.items[item]);
@@ -378,7 +544,6 @@
     session.firstTry = true;
     session.locked = false;
 
-    // Boss area
     var bossArea = $('boss-area');
     if (session.phase === 'boss') {
       bossArea.style.display = 'flex';
@@ -389,7 +554,7 @@
       bossArea.style.display = 'none';
     }
 
-    $('task-question').textContent = t.question;
+    $('task-question').textContent = (t.review ? 'Nochmal \u00fcben: ' : '') + t.question;
     var vis = $('task-visual');
     var eq = $('task-equation');
     clear(vis);
@@ -397,21 +562,26 @@
 
     if (t.type === 'count') {
       renderItemRow(vis, t.item, t.n);
-    } else if (t.type === 'add') {
-      var gA = el('div', 'group'); renderItemRow(gA, t.item, t.a);
-      var gB = el('div', 'group'); renderItemRow(gB, t.item, t.b);
-      vis.appendChild(gA);
-      vis.appendChild(el('div', 'op', '+'));
-      vis.appendChild(gB);
+    } else if (t.type === 'add' || t.type === 'double') {
+      if (t.a <= 10 && t.b <= 10) {
+        var gA = el('div', 'group'); renderItemRow(gA, t.item, t.a);
+        var gB = el('div', 'group'); renderItemRow(gB, t.item, t.b);
+        vis.appendChild(gA);
+        vis.appendChild(el('div', 'op', '+'));
+        vis.appendChild(gB);
+      }
       eq.textContent = t.equation;
     } else if (t.type === 'sub') {
-      var g = el('div', 'group');
-      renderItemRow(g, t.item, t.a, t.a - t.b);
-      vis.appendChild(g);
+      if (t.a <= 12) {
+        var g = el('div', 'group');
+        renderItemRow(g, t.item, t.a, t.a - t.b);
+        vis.appendChild(g);
+      }
+      eq.textContent = t.equation;
+    } else if (t.type === 'missing' || t.type === 'mul') {
       eq.textContent = t.equation;
     } else if (t.type === 'compare') {
-      var sides = [['Links', t.left], ['Rechts', t.right]];
-      sides.forEach(function (s) {
+      [['Links', t.left], ['Rechts', t.right]].forEach(function (s) {
         var side = el('div', 'compare-side');
         side.appendChild(el('div', 'side-name', s[0]));
         var gg = el('div', 'group');
@@ -421,7 +591,6 @@
       });
     }
 
-    // Answers
     var answers = $('answers');
     clear(answers);
     t.options.forEach(function (opt) {
@@ -451,7 +620,6 @@
       state.stats.correct++;
       state.stats.byType[t.type].correct++;
 
-      // Streak
       if (session.firstTry) {
         session.streak++;
         if (session.streak > state.stats.bestStreak) state.stats.bestStreak = session.streak;
@@ -459,7 +627,14 @@
 
       var levelBefore = levelOf(state.xp);
       var xp = session.firstTry ? 10 : 5;
-      var bonus = (session.firstTry && session.streak > 0 && session.streak % STREAK_BONUS_EVERY === 0) ? STREAK_BONUS_XP : 0;
+      var bonusDiamond = false;
+      var bonus = 0;
+      if (session.firstTry && session.streak > 0 && session.streak % STREAK_BONUS_EVERY === 0) {
+        bonus = STREAK_BONUS_XP;
+        bonusDiamond = true;
+        state.inventory.diamond = (state.inventory.diamond || 0) + 1;
+        session.earnedItems.diamond = (session.earnedItems.diamond || 0) + 1;
+      }
       state.xp += xp + bonus;
       session.xpGained += xp + bonus;
       if (levelOf(state.xp) > levelBefore) session.pendingLevelUp = levelOf(state.xp);
@@ -476,7 +651,7 @@
             state.xp += BOSS_XP;
             session.xpGained += BOSS_XP;
             state.inventory.apple_golden = (state.inventory.apple_golden || 0) + 1;
-            session.earned.apple_golden = (session.earned.apple_golden || 0) + 1;
+            session.earnedItems.apple_golden = (session.earnedItems.apple_golden || 0) + 1;
             if (levelOf(state.xp) > levelOf(state.xp - BOSS_XP)) session.pendingLevelUp = levelOf(state.xp);
             saveState();
             showBossWin();
@@ -485,11 +660,26 @@
           }
         }, 900);
       } else {
-        var rewardId = pickReward();
-        state.inventory[rewardId] = (state.inventory[rewardId] || 0) + 1;
-        session.earned[rewardId] = (session.earned[rewardId] || 0) + 1;
+        // Award the next block of the current build project
+        var p = currentProject();
+        var blockKey = p.order[state.build.placed].key;
+        state.build.placed++;
+        session.earnedBlocks[blockKey] = (session.earnedBlocks[blockKey] || 0) + 1;
+
+        var finished = (state.build.placed >= p.total);
+        if (finished) {
+          session.pendingBuildDone = p;
+          session.buildsFinished.push(p.name);
+          state.build.completed.push(p.id);
+          state.build.projectIndex++;
+          state.build.placed = 0;
+          state.build.seen = 0;
+        }
         saveState();
-        setTimeout(function () { showReward(rewardId, xp + bonus, bonus > 0); }, 450);
+
+        flyBlock(btn, ASSETS.blocks[blockKey]);
+        renderBuildCounter();
+        setTimeout(function () { showReward(blockKey, xp + bonus, bonusDiamond); }, 550);
       }
     } else {
       btn.classList.add('wrong');
@@ -505,11 +695,23 @@
     }
   }
 
-  function taskSignature(t) {
-    if (t.type === 'count') return 'count:' + t.n;
-    if (t.type === 'add') return t.a + '+' + t.b;
-    if (t.type === 'sub') return t.a + '-' + t.b;
-    return 'compare:' + t.left + ':' + t.right;
+  // ---------- Flying block animation ----------
+  function flyBlock(fromEl, src) {
+    try {
+      var from = fromEl.getBoundingClientRect();
+      var to = $('hud-build').getBoundingClientRect();
+      var fly = img(src, 'fly-block');
+      fly.style.left = (from.left + from.width / 2 - 20) + 'px';
+      fly.style.top = (from.top + from.height / 2 - 20) + 'px';
+      document.body.appendChild(fly);
+      var dx = (to.left + to.width / 2) - (from.left + from.width / 2);
+      var dy = (to.top + to.height / 2) - (from.top + from.height / 2);
+      requestAnimationFrame(function () {
+        fly.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(0.4)';
+        fly.style.opacity = '0.2';
+      });
+      setTimeout(function () { if (fly.parentNode) fly.parentNode.removeChild(fly); }, 750);
+    } catch (e) {}
   }
 
   // ---------- Boss helpers ----------
@@ -544,9 +746,27 @@
     maybeLevelUp(showSummary);
   });
 
-  // ---------- Level-Up ----------
-  var levelUpNext = null;
+  // ---------- Build done / Level-Up chains ----------
+  var buildDoneNext = null;
+  function maybeBuildDone(next) {
+    if (session.pendingBuildDone) {
+      var p = session.pendingBuildDone;
+      session.pendingBuildDone = null;
+      $('builddone-title').textContent = p.name + ' fertig!';
+      renderBlueprint($('builddone-grid'), p, p.total, p.total, 32);
+      $('builddone-text').textContent = 'Du hast das ' + p.name + ' gebaut! N\u00e4chstes Projekt: ' + currentProject().name;
+      buildDoneNext = next;
+      showOverlay('overlay-builddone', true);
+    } else {
+      next();
+    }
+  }
+  $('btn-builddone-next').addEventListener('click', function () {
+    showOverlay('overlay-builddone', false);
+    if (buildDoneNext) { var n = buildDoneNext; buildDoneNext = null; n(); }
+  });
 
+  var levelUpNext = null;
   function maybeLevelUp(next) {
     if (session.pendingLevelUp) {
       var lvl = session.pendingLevelUp;
@@ -569,44 +789,40 @@
       next();
     }
   }
-
   $('btn-levelup-next').addEventListener('click', function () {
     showOverlay('overlay-levelup', false);
     if (levelUpNext) { var n = levelUpNext; levelUpNext = null; n(); }
   });
 
   // ---------- Reward overlay ----------
-  function showReward(rewardId, xp, withBonus) {
+  function showReward(blockKey, xp, withDiamond) {
     var item = $('reward-item');
     item.classList.remove('pop');
-    item.src = ASSETS.items[rewardId];
-    void item.offsetWidth; // restart animation
+    item.src = ASSETS.blocks[blockKey];
+    void item.offsetWidth;
     item.classList.add('pop');
-    $('reward-text').textContent = '+1 ' + ITEM_NAMES[rewardId][0] + '!';
-    $('reward-xp').textContent = '+' + xp + ' XP' + (withBonus ? '  (Serien-Bonus!)' : '');
+    $('reward-text').textContent = '+1 ' + BLOCK_NAMES[blockKey] + '!';
+    $('reward-xp').textContent = '+' + xp + ' XP' + (withDiamond ? '  \u00b7  Serien-Bonus: +1 Diamant!' : '');
     renderXpBar();
     showOverlay('overlay-reward', true);
   }
 
   $('btn-reward-next').addEventListener('click', function () {
     showOverlay('overlay-reward', false);
-    maybeLevelUp(nextTask);
+    maybeBuildDone(function () { maybeLevelUp(nextTask); });
   });
 
   function nextTask() {
     session.index++;
     if (session.index >= session.tasks.length) {
-      if (session.phase === 'tasks') {
-        startBoss();
-      } else {
-        showSummary();
-      }
+      if (session.phase === 'tasks') startBoss();
+      else showSummary();
     } else {
       renderTask();
     }
   }
 
-  // ---------- Explanation overlay ----------
+  // ---------- Explanation ----------
   function showExplanation(t) {
     var vis = $('explain-visual');
     var txt = $('explain-text');
@@ -621,25 +837,32 @@
         grid.appendChild(cell);
       }
       vis.appendChild(grid);
-      txt.textContent = 'Zähle langsam mit: Es sind ' + t.n + ' ' + ITEM_NAMES[t.item][t.n === 1 ? 0 : 1] + '.';
-    } else if (t.type === 'add') {
-      var gA = el('div', 'group'); renderItemRow(gA, t.item, t.a);
-      gA.appendChild(el('div', 'num-label', String(t.a)));
-      var gB = el('div', 'group'); renderItemRow(gB, t.item, t.b);
-      gB.appendChild(el('div', 'num-label', String(t.b)));
-      vis.appendChild(gA);
-      vis.appendChild(el('div', 'op', '+'));
-      vis.appendChild(gB);
+      txt.textContent = 'Z\u00e4hle langsam mit: Es sind ' + t.n + ' ' + ITEM_NAMES[t.item][t.n === 1 ? 0 : 1] + '.';
+    } else if (t.type === 'add' || t.type === 'double') {
+      if (t.a <= 10 && t.b <= 10) {
+        var gA = el('div', 'group'); renderItemRow(gA, t.item, t.a);
+        gA.appendChild(el('div', 'num-label', String(t.a)));
+        var gB = el('div', 'group'); renderItemRow(gB, t.item, t.b);
+        gB.appendChild(el('div', 'num-label', String(t.b)));
+        vis.appendChild(gA);
+        vis.appendChild(el('div', 'op', '+'));
+        vis.appendChild(gB);
+      }
       txt.textContent = t.a + ' und noch ' + t.b + ' dazu — zusammen sind das ' + (t.a + t.b) + '.';
     } else if (t.type === 'sub') {
-      var g = el('div', 'group');
-      renderItemRow(g, t.item, t.a, t.a - t.b);
-      g.appendChild(el('div', 'num-label', t.a + ' \u2212 ' + t.b + ' = ' + (t.a - t.b)));
-      vis.appendChild(g);
-      txt.textContent = 'Von ' + t.a + ' nimmst du ' + t.b + ' weg (die blassen) — es bleiben ' + (t.a - t.b) + '.';
+      if (t.a <= 12) {
+        var g = el('div', 'group');
+        renderItemRow(g, t.item, t.a, t.a - t.b);
+        g.appendChild(el('div', 'num-label', t.a + ' \u2212 ' + t.b + ' = ' + (t.a - t.b)));
+        vis.appendChild(g);
+      }
+      txt.textContent = 'Von ' + t.a + ' nimmst du ' + t.b + ' weg — es bleiben ' + (t.a - t.b) + '.';
+    } else if (t.type === 'missing') {
+      txt.textContent = 'Von ' + t.a + ' bis ' + t.c + ' fehlen ' + (t.c - t.a) + '. Also: ' + t.a + ' + ' + (t.c - t.a) + ' = ' + t.c + '.';
+    } else if (t.type === 'mul') {
+      txt.textContent = t.f + ' \u00b7 ' + t.n + ' bedeutet ' + t.n + ' mal die ' + t.f + ': das ergibt ' + (t.f * t.n) + '.';
     } else if (t.type === 'compare') {
-      var sides = [['Links', t.left], ['Rechts', t.right]];
-      sides.forEach(function (s) {
+      [['Links', t.left], ['Rechts', t.right]].forEach(function (s) {
         var side = el('div', 'compare-side');
         side.appendChild(el('div', 'side-name', s[0]));
         var gg = el('div', 'group');
@@ -648,10 +871,9 @@
         side.appendChild(el('div', 'num-label', String(s[1])));
         vis.appendChild(side);
       });
-      var msg;
-      if (t.correct === 'gleich') msg = 'Beide Seiten haben ' + t.left + ' — gleich viele!';
-      else msg = (t.correct === 'links' ? 'Links' : 'Rechts') + ' sind ' + Math.max(t.left, t.right) + ', das ist mehr als ' + Math.min(t.left, t.right) + '.';
-      txt.textContent = msg;
+      txt.textContent = (t.correct === 'gleich')
+        ? 'Beide Seiten haben ' + t.left + ' — gleich viele!'
+        : ((t.correct === 'links' ? 'Links' : 'Rechts') + ' sind ' + Math.max(t.left, t.right) + ', das ist mehr als ' + Math.min(t.left, t.right) + '.');
     }
 
     showOverlay('overlay-explain', true);
@@ -659,7 +881,6 @@
 
   $('btn-explain-retry').addEventListener('click', function () {
     showOverlay('overlay-explain', false);
-    // Re-enable remaining answers, same task
     var btns = $('answers').querySelectorAll('button');
     for (var i = 0; i < btns.length; i++) {
       if (!btns[i].classList.contains('wrong')) btns[i].disabled = false;
@@ -674,18 +895,26 @@
     var items = $('summary-items');
     clear(items);
     var any = false;
-    Object.keys(session.earned).forEach(function (id) {
+    Object.keys(session.earnedBlocks).forEach(function (k) {
       any = true;
       var s = el('div', 'summary-item');
-      s.appendChild(img(ASSETS.items[id]));
-      s.appendChild(el('div', null, '\u00d7 ' + session.earned[id]));
+      s.appendChild(img(ASSETS.blocks[k]));
+      s.appendChild(el('div', null, '\u00d7 ' + session.earnedBlocks[k]));
       items.appendChild(s);
     });
-    if (!any) items.appendChild(el('div', null, 'Diesmal keine Items — gleich nochmal!'));
+    Object.keys(session.earnedItems).forEach(function (k) {
+      any = true;
+      var s = el('div', 'summary-item');
+      s.appendChild(img(ASSETS.items[k]));
+      s.appendChild(el('div', null, '\u00d7 ' + session.earnedItems[k]));
+      items.appendChild(s);
+    });
+    if (!any) items.appendChild(el('div', null, 'Diesmal nichts gesammelt — gleich nochmal!'));
 
     $('summary-title').textContent = session.bossDefeated ? session.boss.name + ' besiegt!' : 'Geschafft!';
-    $('summary-stats').textContent = '+' + session.xpGained + ' XP  \u00b7  Level ' + levelOf(state.xp) +
-      (session.streak >= 3 ? '  \u00b7  Beste Serie heute: ' + session.streak : '');
+    var statsLine = '+' + session.xpGained + ' XP  \u00b7  Level ' + levelOf(state.xp);
+    if (session.buildsFinished.length) statsLine += '  \u00b7  Fertig gebaut: ' + session.buildsFinished.join(', ');
+    $('summary-stats').textContent = statsLine;
     showOverlay('overlay-summary', true);
   }
 
@@ -698,18 +927,82 @@
     renderStart();
     show('screen-start');
   });
+  $('btn-summary-build').addEventListener('click', function () {
+    showOverlay('overlay-summary', false);
+    renderBuildScreen();
+    show('screen-build');
+  });
 
   // ---------- Vorlesen ----------
-  $('btn-speak').addEventListener('click', function () {
-    speak(currentTask().speak);
-  });
+  $('btn-speak').addEventListener('click', function () { speak(currentTask().speak); });
+
+  // ---------- Build screen ----------
+  function renderBlueprint(container, project, placed, popFrom, cellSize) {
+    clear(container);
+    container.style.gridTemplateColumns = 'repeat(' + project.rows[0].length + ', ' + cellSize + 'px)';
+    // Index cells by position for placement lookup
+    var placedSet = {};
+    for (var i = 0; i < placed && i < project.order.length; i++) {
+      var o = project.order[i];
+      placedSet[o.r + ':' + o.c] = { key: o.key, idx: i };
+    }
+    for (var r = 0; r < project.rows.length; r++) {
+      for (var c = 0; c < project.rows[r].length; c++) {
+        var ch = project.rows[r][c];
+        var cell = el('div', 'build-cell');
+        cell.style.width = cellSize + 'px';
+        cell.style.height = cellSize + 'px';
+        if (ch === '.') {
+          cell.classList.add('air');
+        } else {
+          var info = placedSet[r + ':' + c];
+          if (info) {
+            var im = img(ASSETS.blocks[info.key]);
+            if (info.idx >= popFrom) im.classList.add('placed-pop');
+            cell.appendChild(im);
+          } else {
+            cell.classList.add('empty');
+          }
+        }
+        container.appendChild(cell);
+      }
+    }
+  }
+
+  function renderBuildScreen() {
+    var p = currentProject();
+    $('build-title').textContent = p.name;
+    $('build-progress').textContent = state.build.placed + ' / ' + p.total + ' Bl\u00f6cke';
+    renderBlueprint($('build-grid'), p, state.build.placed, state.build.seen, 52);
+    state.build.seen = state.build.placed;
+    saveState();
+
+    var done = $('builds-done');
+    clear(done);
+    if (state.build.completed.length) {
+      done.appendChild(el('div', 'builds-done-title', 'Fertige Bauwerke:'));
+      var row = el('div', 'builds-done-row');
+      state.build.completed.forEach(function (id) {
+        for (var i = 0; i < BUILD_PROJECTS.length; i++) {
+          if (BUILD_PROJECTS[i].id === id) {
+            var b = el('div', 'builds-done-item');
+            b.appendChild(img(ASSETS.blocks[BUILD_PROJECTS[i].order[0].key]));
+            b.appendChild(el('div', null, BUILD_PROJECTS[i].name));
+            row.appendChild(b);
+          }
+        }
+      });
+      done.appendChild(row);
+    }
+  }
+
+  $('btn-build-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
 
   // ---------- Start screen ----------
   function renderStart() {
     var lvl = levelOf(state.xp);
     $('start-level').textContent = 'Level ' + lvl + '  \u00b7  ' + state.xp + ' XP';
     $('start-pickaxe').src = pickaxeForLevel(lvl).src;
-    $('start-pickaxe').title = pickaxeForLevel(lvl).name;
     renderGroundStrip();
     renderHotbar();
   }
@@ -726,6 +1019,8 @@
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(renderGroundStrip, 150);
   });
+
+  var INV_ORDER = ['diamond', 'emerald', 'gold_ingot', 'iron_ingot', 'apple', 'apple_golden'];
 
   function renderHotbar() {
     var bar = $('hotbar');
@@ -745,6 +1040,7 @@
   }
 
   $('btn-start-game').addEventListener('click', startSession);
+  $('btn-start-build').addEventListener('click', function () { renderBuildScreen(); show('screen-build'); });
   $('btn-start-world').addEventListener('click', function () { renderWorldMap(); show('screen-worldmap'); });
   $('btn-start-inventory').addEventListener('click', function () { renderInventory(); show('screen-inventory'); });
   $('btn-start-parent').addEventListener('click', function () { resetGate(); show('screen-parent'); });
@@ -781,8 +1077,6 @@
   $('btn-world-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
 
   // ---------- Inventory ----------
-  var INV_ORDER = ['diamond', 'emerald', 'gold_ingot', 'iron_ingot', 'apple', 'apple_golden'];
-
   function renderInventory() {
     var grid = $('inv-grid');
     clear(grid);
@@ -840,7 +1134,10 @@
   gateBtn.addEventListener('pointerleave', gateUp);
   gateBtn.addEventListener('pointercancel', gateUp);
 
-  var TYPE_NAMES = { count: 'Zählen', add: 'Plus', sub: 'Minus', compare: 'Vergleichen' };
+  var TYPE_NAMES = {
+    count: 'Z\u00e4hlen', add: 'Plus', sub: 'Minus', compare: 'Vergleichen',
+    double: 'Verdoppeln', missing: 'L\u00fcckenaufgaben', mul: 'Einmaleins'
+  };
 
   function openParent() {
     var s = state.stats;
@@ -852,21 +1149,42 @@
       'Beste Serie: ' + s.bestStreak,
       'XP gesamt: ' + state.xp + '  \u00b7  Level ' + levelOf(state.xp)
     ];
+    var weakest = null, weakestAcc = 101;
     Object.keys(s.byType).forEach(function (t) {
       var bt = s.byType[t];
       var a = bt.answered > 0 ? Math.round((bt.correct / bt.answered) * 100) : 0;
       lines.push(TYPE_NAMES[t] + ': ' + bt.correct + ' / ' + bt.answered + ' (' + a + ' %)');
+      if (bt.answered >= 4 && a < weakestAcc) { weakest = t; weakestAcc = a; }
     });
     var list = $('parent-stats');
     clear(list);
     lines.forEach(function (l) { list.appendChild(el('div', null, l)); });
 
+    $('parent-reco').textContent = (weakest && weakestAcc < 80)
+      ? 'Empfehlung: ' + TYPE_NAMES[weakest] + ' gezielt \u00fcben (' + weakestAcc + ' % Trefferquote).'
+      : '';
+
+    renderDiffButtons();
     $('parent-gate-panel').style.display = 'none';
     $('parent-stats-panel').style.display = 'flex';
   }
 
+  function renderDiffButtons() {
+    ['leicht', 'mittel', 'schwer'].forEach(function (d) {
+      $('diff-' + d).classList.toggle('selected', state.difficulty === d);
+    });
+  }
+
+  ['leicht', 'mittel', 'schwer'].forEach(function (d) {
+    $('diff-' + d).addEventListener('click', function () {
+      state.difficulty = d;
+      saveState();
+      renderDiffButtons();
+    });
+  });
+
   $('btn-parent-reset').addEventListener('click', function () {
-    if (window.confirm('Wirklich den gesamten Fortschritt löschen?')) {
+    if (window.confirm('Wirklich den gesamten Fortschritt l\u00f6schen?')) {
       state = defaultState();
       saveState();
       openParent();
