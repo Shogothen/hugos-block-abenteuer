@@ -747,99 +747,110 @@ body.shake { animation: screen-shake 0.35s ease; }
   70% { transform: translateX(-3px); }
 }
 
-/* ---------- v7.5: Panorama ---------- */
+/* ---------- v7.5: Panorama 2.0 ---------- */
 .panorama {
   position: relative;
   width: 100%;
   max-width: 760px;
-  height: 200px;
+  height: 210px;
   overflow: hidden;
   border: 4px solid #000;
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.08), 0 6px 0 rgba(0,0,0,0.35);
   margin-bottom: 10px;
   flex: 0 0 auto;
 }
-.panorama.pan-small { height: 150px; }
+.panorama.pan-small { height: 160px; }
 .panorama * { pointer-events: none; }
 
 .pan-sky { position: absolute; inset: 0; }
-.pan-evening .pan-sky { background: linear-gradient(#ffb36b 0%, #e58fb0 34%, #9d6fc9 62%, #5d4a96 100%); }
+.pan-evening .pan-sky { background: linear-gradient(#ffb36b 0%, #e58fb0 38%, #9d6fc9 68%, #5d4a96 100%); }
 .pan-morning .pan-sky { background: linear-gradient(#ffd9a0 0%, #ffe9c4 30%, #a8d8ef 70%, #7fb6e0 100%); }
-.pan-day .pan-sky { background: linear-gradient(#8fd0f5 0%, #a9ddf8 55%, #c6ecff 100%); }
+.pan-day .pan-sky { background: linear-gradient(#7ec8f2 0%, #a9ddf8 55%, #cdeeff 100%); }
 
 .pan-sun {
   position: absolute;
-  width: 26px; height: 26px;
-  top: 22px; left: 68%;
-  filter: drop-shadow(0 0 10px rgba(255,210,110,0.9)) saturate(1.4);
+  width: 28px; height: 28px;
+  top: 18px; left: 70%;
   animation: sun-glow 3.5s ease-in-out infinite;
 }
 @keyframes sun-glow {
   0%, 100% { filter: drop-shadow(0 0 8px rgba(255,210,110,0.8)) saturate(1.4); }
-  50% { filter: drop-shadow(0 0 16px rgba(255,220,130,1)) saturate(1.6); }
+  50% { filter: drop-shadow(0 0 18px rgba(255,220,130,1)) saturate(1.6); }
 }
 
-.pan-cloud { position: absolute; display: flex; opacity: 0.85; }
-.pan-cloud img { width: 22px; height: 10px; }
-.pan-cloud.c0 { top: 18px; animation: cloud-drift 55s linear infinite; }
-.pan-cloud.c1 { top: 44px; animation: cloud-drift 75s linear infinite; animation-delay: -30s; }
-.pan-cloud.c2 { top: 32px; animation: cloud-drift 95s linear infinite; animation-delay: -60s; }
+.pan-cloud { position: absolute; display: flex; opacity: 0.9; }
+.pan-cloud img { width: 22px; height: 9px; }
+.pan-cloud.c0 { top: 16px; animation: cloud-drift 55s linear infinite; }
+.pan-cloud.c1 { top: 42px; animation: cloud-drift 75s linear infinite; animation-delay: -30s; }
+.pan-cloud.c2 { top: 30px; animation: cloud-drift 95s linear infinite; animation-delay: -60s; }
 @keyframes cloud-drift {
   0% { left: -80px; }
   100% { left: 105%; }
 }
 
-.pan-layer { position: absolute; left: -16px; right: -16px; bottom: 26px; height: 110px; }
+.pan-layer { position: absolute; left: -16px; right: -16px; bottom: 0; height: 130px; }
 .pan-col { position: absolute; bottom: 0; width: 16px; background-size: 16px 16px; background-repeat: repeat; }
-.pan-layer.back { bottom: 40px; filter: hue-rotate(40deg) saturate(0.55) brightness(0.55); animation: layer-drift 46s ease-in-out infinite alternate; }
-.pan-layer.mid { bottom: 30px; filter: hue-rotate(215deg) saturate(0.7) brightness(0.75); animation: layer-drift 30s ease-in-out infinite alternate-reverse; }
-.pan-day .pan-layer.back { filter: saturate(0.8) brightness(0.85); }
-.pan-day .pan-layer.mid { filter: hue-rotate(20deg) brightness(0.95); }
+.pan-layer.back {
+  bottom: 34px;
+  filter: brightness(0.55) saturate(0.65);
+  opacity: 0.9;
+  animation: layer-drift 46s ease-in-out infinite alternate;
+}
+.pan-evening .pan-layer.back { filter: brightness(0.5) saturate(0.55) hue-rotate(25deg); }
+.pan-layer.cherryclump {
+  bottom: 38px;
+  filter: brightness(0.8);
+  animation: layer-drift 34s ease-in-out infinite alternate-reverse;
+}
 @keyframes layer-drift {
-  0% { transform: translateX(-8px); }
-  100% { transform: translateX(8px); }
+  0% { transform: translateX(-7px); }
+  100% { transform: translateX(7px); }
 }
 
-.pan-tree { position: absolute; bottom: 26px; width: 0; }
+.pan-terrain { position: absolute; left: 0; right: -16px; bottom: 0; }
+.pan-tcol { position: absolute; bottom: 0; width: 16px; background-size: 16px 16px; background-repeat: repeat; }
+.pan-cap { position: absolute; top: -0px; left: 0; width: 16px; height: 16px; margin-top: 0; }
+.pan-tcol .pan-cap { top: 0; }
+
+.pan-tree { position: absolute; width: 0; z-index: 2; }
 .pan-trunk { position: absolute; bottom: 0; left: -5px; background-size: 16px 16px; }
-.pan-canopy { position: absolute; left: 50%; transform: translateX(-50%); background-size: 16px 16px; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25); }
+.pan-canopy { position: absolute; left: 50%; transform: translateX(-50%); background-size: 16px 16px; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.22); }
 
 .pan-waterfall {
   position: absolute;
-  right: 9%;
-  bottom: 24px;
-  width: 14px;
-  height: 78px;
+  width: 13px;
   background-image: url('assets/minecraft/blocks/water_still_blue.png');
   background-size: 16px 512px;
-  animation: water-run 2.6s steps(32) infinite;
-  opacity: 0.9;
+  animation: water-run 2.4s steps(32) infinite;
+  opacity: 0.92;
+  z-index: 2;
 }
 @keyframes water-run {
   0% { background-position-y: 0; }
   100% { background-position-y: 512px; }
 }
-
-.pan-ground { position: absolute; left: 0; right: 0; bottom: 0; }
-.pan-ground-top { height: 9px; background-size: 16px 16px; filter: brightness(1.15); }
-.pan-ground-side { height: 18px; background-size: 18px 18px; }
-
-.pan-grass { position: absolute; bottom: 24px; width: 14px; height: 14px; }
-
-.pan-house {
+.pan-pool {
   position: absolute;
-  left: 26%;
-  bottom: 26px;
-  display: grid;
+  bottom: 7px;
+  width: 34px; height: 11px;
+  background-image: url('assets/minecraft/blocks/water_still_blue.png');
+  background-size: 16px 512px;
+  animation: water-run 3.2s steps(32) infinite;
+  opacity: 0.95;
+  z-index: 2;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.25);
 }
+
+.pan-grass { position: absolute; width: 14px; height: 14px; z-index: 2; }
+
+.pan-house { position: absolute; display: grid; z-index: 3; }
 .pan-house .build-cell { box-shadow: none; }
 
 .pan-pet {
   position: absolute;
-  left: 18%;
-  bottom: 28px;
   width: 22px;
   height: auto;
+  z-index: 3;
   animation: float-bob 2s ease-in-out infinite;
 }
 
@@ -847,9 +858,10 @@ body.shake { animation: screen-shake 0.35s ease; }
   position: absolute;
   top: -12px;
   width: 8px; height: 8px;
-  filter: hue-rotate(0deg) saturate(1.3) brightness(1.2);
+  filter: saturate(1.3) brightness(1.2);
   animation: petal-fall linear forwards;
   opacity: 0.95;
+  z-index: 4;
 }
 @keyframes petal-fall {
   0% { transform: translate(0, 0) rotate(0); }

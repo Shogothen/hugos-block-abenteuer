@@ -24,7 +24,7 @@
       brick: A + 'blocks/brick.png',
       planks: A + 'blocks/planks_oak.png',
       logOak: A + 'blocks/log_oak.png',
-      leavesOak: A + 'blocks/leaves_oak.png',
+      leavesOak: A + 'blocks/leaves_oak_green.png',
       ironBlock: A + 'blocks/iron_block.png',
       goldBlock: A + 'blocks/gold_block.png',
       diamondBlock: A + 'blocks/diamond_block.png'
@@ -2223,13 +2223,12 @@
 
   $('btn-trophies-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
 
-  // ---------- Panorama (lebendige Szene) ----------
+  // ---------- Panorama 2.0 (Block-Terrain) ----------
   var PAN_BLOCKS = {
     cherry: A + 'blocks/cherry_leaves_opaque.png',
     cherryLog: A + 'blocks/cherry_log_side.png',
     snow: A + 'blocks/snow.png',
-    grassTop: A + 'blocks/grass_top.png',
-    tallgrass: A + 'blocks/tallgrass.png',
+    tallgrass: A + 'blocks/tallgrass_green.png',
     water: A + 'blocks/water_still_blue.png'
   };
 
@@ -2240,48 +2239,24 @@
     return 'pan-evening';
   }
 
-  function skylineHeights(cols, min, max, seedStep) {
-    var hts = [];
-    var h = rnd(min, max);
-    for (var i = 0; i < cols; i++) {
-      h += rnd(-seedStep, seedStep);
-      if (h < min) h = min;
-      if (h > max) h = max;
-      hts.push(h);
-    }
-    return hts;
-  }
-
-  function panLayer(cls, tile, cols, min, max, step) {
-    var layer = el('div', 'pan-layer ' + cls);
-    var hts = skylineHeights(cols, min, max, step);
-    for (var i = 0; i < cols; i++) {
-      var col = el('div', 'pan-col');
-      col.style.left = (i * 16) + 'px';
-      col.style.height = (hts[i] * 16) + 'px';
-      col.style.backgroundImage = "url('" + tile + "')";
-      layer.appendChild(col);
-    }
-    return layer;
-  }
-
-  function panTree(x, leafTile, logTile, big) {
+  function panTree(xPx, baseY, leafTile, logTile, big) {
     var t = el('div', 'pan-tree');
-    t.style.left = x + '%';
-    var s = big ? 1.4 : 1;
+    t.style.left = xPx + 'px';
+    t.style.bottom = baseY + 'px';
+    var s = big ? 1.3 : 1;
     var trunk = el('div', 'pan-trunk');
     trunk.style.width = Math.round(10 * s) + 'px';
-    trunk.style.height = Math.round(26 * s) + 'px';
+    trunk.style.height = Math.round(24 * s) + 'px';
     trunk.style.backgroundImage = "url('" + logTile + "')";
     var c1 = el('div', 'pan-canopy');
-    c1.style.width = Math.round(54 * s) + 'px';
-    c1.style.height = Math.round(22 * s) + 'px';
-    c1.style.bottom = Math.round(22 * s) + 'px';
+    c1.style.width = Math.round(52 * s) + 'px';
+    c1.style.height = Math.round(20 * s) + 'px';
+    c1.style.bottom = Math.round(20 * s) + 'px';
     c1.style.backgroundImage = "url('" + leafTile + "')";
     var c2 = el('div', 'pan-canopy');
-    c2.style.width = Math.round(32 * s) + 'px';
-    c2.style.height = Math.round(14 * s) + 'px';
-    c2.style.bottom = Math.round(42 * s) + 'px';
+    c2.style.width = Math.round(30 * s) + 'px';
+    c2.style.height = Math.round(13 * s) + 'px';
+    c2.style.bottom = Math.round(38 * s) + 'px';
     c2.style.backgroundImage = "url('" + leafTile + "')";
     t.appendChild(trunk); t.appendChild(c1); t.appendChild(c2);
     return t;
@@ -2292,53 +2267,112 @@
     if (container.getAttribute('data-stamp') === stamp) return;
     container.setAttribute('data-stamp', stamp);
     clear(container);
-    container.className = 'panorama ' + panPhase();
+    container.classList.remove('pan-morning', 'pan-day', 'pan-evening');
+    container.classList.add(panPhase());
 
-    var w = container.clientWidth || window.innerWidth;
-    var cols = Math.ceil(w / 16) + 1;
+    var w = container.clientWidth || Math.min(window.innerWidth, 760);
+    var T = 16;
+    var cols = Math.ceil(w / T) + 1;
 
     container.appendChild(el('div', 'pan-sky'));
-
-    var sun = img(ASSETS.blocks.glowstone, 'pan-sun');
-    container.appendChild(sun);
-
+    container.appendChild(img(ASSETS.blocks.glowstone, 'pan-sun'));
     for (var ci = 0; ci < 3; ci++) {
       var cloud = el('div', 'pan-cloud c' + ci);
       for (var cj = 0; cj < 3; cj++) cloud.appendChild(img(PAN_BLOCKS.snow));
       container.appendChild(cloud);
     }
 
-    container.appendChild(panLayer('back', PAN_BLOCKS.cherry, cols, 2, 6, 2));
-    container.appendChild(panLayer('mid', ASSETS.blocks.leavesOak, cols, 1, 4, 1));
+    // Distant treelines: dark oak forest + cherry clumps
+    var backF = el('div', 'pan-layer back');
+    var h0 = rnd(2, 4);
+    for (var i = 0; i < cols; i++) {
+      h0 += rnd(-1, 1); if (h0 < 2) h0 = 2; if (h0 > 5) h0 = 5;
+      var col0 = el('div', 'pan-col');
+      col0.style.left = (i * T) + 'px';
+      col0.style.height = (h0 * T) + 'px';
+      col0.style.backgroundImage = "url('" + ASSETS.blocks.leavesOak + "')";
+      backF.appendChild(col0);
+    }
+    container.appendChild(backF);
+    var clump = el('div', 'pan-layer cherryclump');
+    [0.12, 0.55, 0.8].forEach(function (cx) {
+      var c = el('div', 'pan-col');
+      c.style.left = Math.round(cx * w) + 'px';
+      c.style.width = rnd(48, 80) + 'px';
+      c.style.height = rnd(2, 3) * T + 'px';
+      c.style.backgroundImage = "url('" + PAN_BLOCKS.cherry + "')";
+      clump.appendChild(c);
+    });
+    container.appendChild(clump);
 
-    container.appendChild(panTree(8, PAN_BLOCKS.cherry, PAN_BLOCKS.cherryLog, true));
-    container.appendChild(panTree(72, ASSETS.blocks.leavesOak, ASSETS.blocks.logOak, false));
-    container.appendChild(panTree(88, PAN_BLOCKS.cherry, PAN_BLOCKS.cherryLog, false));
+    // Midground: real stepped block terrain (grass cap + dirt fill)
+    var hts = [];
+    var h = rnd(1, 2);
+    for (var c2i = 0; c2i < cols; c2i++) {
+      h += rnd(0, 2) - 1; if (h < 1) h = 1; if (h > 3) h = 3;
+      hts.push(h);
+    }
+    // Flat plateau for the house
+    var stage = HOUSE_STAGES[state.house - 1];
+    var houseW = stage.rows[0].length * 9;
+    var hStart = Math.max(1, Math.floor(cols * 0.22));
+    var hCols = Math.ceil(houseW / T) + 1;
+    var plateau = hts[hStart] || 1;
+    for (var pi = hStart - 1; pi <= hStart + hCols && pi < cols; pi++) hts[pi] = plateau;
+    // Cliff with waterfall on the right
+    var cliffStart = cols - 4;
+    for (var ki = cliffStart; ki < cols; ki++) hts[ki] = 5;
+    if (hts[cliffStart - 1] > 3) hts[cliffStart - 1] = 3;
 
+    var terrain = el('div', 'pan-terrain');
+    for (var ti = 0; ti < cols; ti++) {
+      var tc = el('div', 'pan-tcol');
+      tc.style.left = (ti * T) + 'px';
+      tc.style.height = (hts[ti] * T) + 'px';
+      tc.style.backgroundImage = "url('" + ASSETS.blocks.dirt + "')";
+      var cap = img(ASSETS.blocks.grass, 'pan-cap');
+      tc.appendChild(cap);
+      terrain.appendChild(tc);
+    }
+    container.appendChild(terrain);
+
+    // Waterfall from the cliff into a pool
+    var fallH = (5 - 1) * T;
     var fall = el('div', 'pan-waterfall');
+    fall.style.right = ((cols - cliffStart) * T - 2) + 'px';
+    fall.style.height = fallH + 'px';
+    fall.style.bottom = T + 'px';
     container.appendChild(fall);
+    var pool = el('div', 'pan-pool');
+    pool.style.right = ((cols - cliffStart) * T - 6) + 'px';
+    container.appendChild(pool);
 
-    var ground = el('div', 'pan-ground');
-    var top = el('div', 'pan-ground-top');
-    top.style.backgroundImage = "url('" + PAN_BLOCKS.grassTop + "')";
-    var side = el('div', 'pan-ground-side');
-    side.style.backgroundImage = "url('" + ASSETS.blocks.grass + "')";
-    ground.appendChild(top); ground.appendChild(side);
-    container.appendChild(ground);
+    // Trees standing on the terrain
+    var t1 = Math.max(1, hStart - 5);
+    container.appendChild(panTree(t1 * T, hts[t1] * T, PAN_BLOCKS.cherry, PAN_BLOCKS.cherryLog, true));
+    var t2 = Math.min(cols - 6, hStart + hCols + 3);
+    container.appendChild(panTree(t2 * T, hts[t2] * T, ASSETS.blocks.leavesOak, ASSETS.blocks.logOak, false));
 
-    for (var gi = 0; gi < 5; gi++) {
+    // Grass tufts on column tops
+    for (var gi = 0; gi < 6; gi++) {
+      var gx = rnd(0, cols - 1);
       var g = img(PAN_BLOCKS.tallgrass, 'pan-grass');
-      g.style.left = rnd(4, 92) + '%';
+      g.style.left = (gx * T + 1) + 'px';
+      g.style.bottom = (hts[gx] * T) + 'px';
       container.appendChild(g);
     }
 
-    var stage = HOUSE_STAGES[state.house - 1];
+    // The real house on its plateau
     var house = el('div', 'pan-house build-grid');
     renderBlueprint(house, stage, 9, false);
+    house.style.left = (hStart * T) + 'px';
+    house.style.bottom = (plateau * T) + 'px';
     container.appendChild(house);
 
     if (state.activePet && state.pets[state.activePet]) {
       var pp = img(petById(state.activePet).src, 'pan-pet');
+      pp.style.left = (hStart * T - 26) + 'px';
+      pp.style.bottom = (plateau * T + 2) + 'px';
       container.appendChild(pp);
     }
   }
