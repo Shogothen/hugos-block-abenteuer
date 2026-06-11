@@ -800,6 +800,11 @@
         tone(55, 0.5, 'sine', 0.3, 0.05);
       },
       whee: function () { if (on()) tone(280, 0.4, 'square', 0.22, 0, 1100); },
+      deny: function () {
+        if (!on()) return;
+        tone(230, 0.09, 'square', 0.2);
+        tone(175, 0.14, 'square', 0.2, 0.1);
+      },
       sad: function () {
         if (!on()) return;
         tone(392, 0.25, 'triangle', 0.24);
@@ -1861,21 +1866,27 @@
 
     var next = HOUSE_STAGES[state.house];
     if (next) {
+      var afford = canAfford(next.cost);
       $('home-next-panel').style.display = 'flex';
       $('home-max').style.display = 'none';
       $('home-next-name').textContent = 'N\u00e4chste Stufe: ' + next.name + (next.effect ? '  (' + next.effect + ')' : '');
       renderCostRow($('home-next-cost'), next.cost);
-      $('btn-home-upgrade').disabled = !canAfford(next.cost);
+      $('btn-home-upgrade').disabled = false;
+      $('home-next-hint').textContent = afford
+        ? 'Du baust selbst \u2014 Block f\u00fcr Block!'
+        : 'Dir fehlen noch Rohstoffe \u2014 sammle sie beim Rechnen!';
+      $('btn-home-play').style.display = afford ? 'none' : 'flex';
     } else {
       $('home-next-panel').style.display = 'none';
       $('home-max').style.display = 'block';
     }
   }
 
-  function renderCostRow(container, cost) {
+  function renderCostRow(container, cost, wiggle) {
     clear(container);
     for (var k in cost) {
-      var chip = el('div', 'res-chip cost-chip' + ((state.res[k] || 0) >= cost[k] ? ' ok' : ' missing'));
+      var ok = (state.res[k] || 0) >= cost[k];
+      var chip = el('div', 'res-chip cost-chip' + (ok ? ' ok' : ' missing' + (wiggle ? ' wiggle' : '')));
       chip.appendChild(img(RES[k].src));
       chip.appendChild(el('span', 'res-count', cost[k] + ' / ' + (state.res[k] || 0)));
       container.appendChild(chip);
@@ -1885,7 +1896,16 @@
   $('btn-home-upgrade').addEventListener('click', function () {
     if (state.building) return;
     var next = HOUSE_STAGES[state.house];
-    if (!next || !canAfford(next.cost)) return;
+    if (!next) return;
+    if (!canAfford(next.cost)) {
+      Sound.deny();
+      renderCostRow($('home-next-cost'), next.cost, true);
+      var missing = RES_KEYS.filter(function (k) {
+        return (next.cost[k] || 0) > (state.res[k] || 0);
+      }).map(function (k) { return RES[k].name; });
+      autoSpeak('Dir fehlt noch: ' + missing.join(' und ') + '! Sammle beim Rechnen weiter.', 100);
+      return;
+    }
     payCost(next.cost);
     state.building = { stage: state.house + 1, placed: 0 };
     saveState();
@@ -1945,6 +1965,8 @@
     renderHomeGrid(before);
     $('home-build-progress').textContent = b.placed + ' / ' + stage.total + ' Bl\u00f6cke';
   });
+
+  $('btn-home-play').addEventListener('click', function () { startSession(); });
 
   $('home-pet').addEventListener('click', function () {
     var hp = $('home-pet');

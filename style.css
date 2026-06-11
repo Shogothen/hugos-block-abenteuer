@@ -736,3 +736,13 @@ body.shake { animation: screen-shake 0.35s ease; }
 }
 .explain-visual img.gap { opacity: 0.45; filter: brightness(1.6) drop-shadow(0 0 4px rgba(255,216,61,0.8)); }
 .explain-visual img.solid-dim { opacity: 0.85; }
+
+/* v7.4.1: Kauf-Feedback */
+.home-next-hint { font-size: 13px; color: #ffd83d; text-align: center; text-shadow: 1px 1px 0 rgba(0,0,0,0.85); min-height: 16px; }
+.cost-chip.wiggle { animation: chip-wiggle 0.45s ease; }
+@keyframes chip-wiggle {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  45% { transform: translateX(5px); }
+  70% { transform: translateX(-3px); }
+}
