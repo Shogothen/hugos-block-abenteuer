@@ -674,12 +674,21 @@
     return;
   }
 
-  // ---------- Sound engine (8-bit synthesis, no files) ----------
+  // ---------- Sound engine v2 (8-bit synthesis, compressor, no files) ----------
   var Sound = (function () {
-    var ctx = null;
+    var ctx = null, master = null;
     function ac() {
       if (!ctx) {
-        try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+        try {
+          ctx = new (window.AudioContext || window.webkitAudioContext)();
+          var comp = ctx.createDynamicsCompressor();
+          comp.threshold.value = -18;
+          comp.ratio.value = 6;
+          master = ctx.createGain();
+          master.gain.value = 0.9;
+          master.connect(comp);
+          comp.connect(ctx.destination);
+        } catch (e) {}
       }
       if (ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
       return ctx;
@@ -693,13 +702,13 @@
         o.type = type || 'square';
         o.frequency.setValueAtTime(freq, t0);
         if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, t0 + dur);
-        g.gain.setValueAtTime(vol || 0.15, t0);
+        g.gain.setValueAtTime(vol || 0.2, t0);
         g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-        o.connect(g); g.connect(c.destination);
+        o.connect(g); g.connect(master);
         o.start(t0); o.stop(t0 + dur + 0.05);
       } catch (e) {}
     }
-    function noise(dur, vol, delay, filterFreq, drop) {
+    function noise(dur, vol, delay, filterFreq, drop, type) {
       var c = ac(); if (!c) return;
       try {
         var t0 = c.currentTime + (delay || 0);
@@ -708,53 +717,105 @@
         var d = buf.getChannelData(0);
         for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
         var src = c.createBufferSource(); src.buffer = buf;
-        var f = c.createBiquadFilter(); f.type = 'lowpass';
+        var f = c.createBiquadFilter(); f.type = type || 'lowpass';
         f.frequency.setValueAtTime(filterFreq || 1200, t0);
         if (drop) f.frequency.exponentialRampToValueAtTime(drop, t0 + dur);
         var g = c.createGain();
-        g.gain.setValueAtTime(vol || 0.2, t0);
+        g.gain.setValueAtTime(vol || 0.25, t0);
         g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-        src.connect(f); f.connect(g); g.connect(c.destination);
+        src.connect(f); f.connect(g); g.connect(master);
         src.start(t0);
       } catch (e) {}
     }
     return {
-      unlock: function () { ac(); },
-      click: function () { if (on()) tone(700, 0.05, 'square', 0.07); },
-      correct: function () { if (!on()) return; tone(660, 0.09, 'square', 0.13); tone(990, 0.13, 'square', 0.13, 0.09); },
-      wrong: function () { if (on()) tone(200, 0.3, 'sawtooth', 0.11, 0, 90); },
-      mine: function () { if (!on()) return; noise(0.07, 0.18, 0, 900); tone(160, 0.06, 'triangle', 0.1); },
-      hit: function () { if (!on()) return; noise(0.12, 0.25, 0, 500, 200); tone(95, 0.16, 'triangle', 0.22, 0, 55); },
-      explode: function () { if (!on()) return; noise(0.5, 0.3, 0, 1400, 80); tone(180, 0.45, 'sine', 0.2, 0, 40); },
+      unlock: function () {
+        var c = ac(); if (!c) return;
+        try {
+          var b = c.createBuffer(1, 1, 22050);
+          var s = c.createBufferSource();
+          s.buffer = b; s.connect(master); s.start(0);
+        } catch (e) {}
+      },
+      click: function () {
+        if (!on()) return;
+        noise(0.05, 0.3, 0, 2200, 600);
+        tone(760, 0.07, 'square', 0.22);
+      },
+      correct: function () {
+        if (!on()) return;
+        tone(660, 0.1, 'square', 0.26);
+        tone(990, 0.16, 'square', 0.26, 0.1);
+      },
+      wrong: function () { if (on()) tone(190, 0.35, 'sawtooth', 0.24, 0, 85); },
+      mine: function () {
+        if (!on()) return;
+        noise(0.09, 0.4, 0, 1100, 300);
+        tone(150, 0.08, 'triangle', 0.24);
+        noise(0.06, 0.25, 0.07, 800);
+      },
+      hit: function () {
+        if (!on()) return;
+        noise(0.16, 0.3, 0, 2400, 280, 'bandpass');
+        noise(0.16, 0.5, 0.07, 600, 150);
+        tone(85, 0.22, 'triangle', 0.42, 0.07, 45);
+      },
+      explode: function () {
+        if (!on()) return;
+        noise(0.65, 0.55, 0, 1600, 60);
+        tone(170, 0.55, 'sine', 0.36, 0, 35);
+        tone(90, 0.4, 'square', 0.18, 0.05, 40);
+      },
       levelup: function () {
         if (!on()) return;
-        [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.11, 'square', 0.12, i * 0.1); });
+        [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.13, 'square', 0.22, i * 0.1); });
       },
-      craft: function () { if (!on()) return; tone(1200, 0.06, 'triangle', 0.16); tone(1600, 0.1, 'triangle', 0.14, 0.07); noise(0.05, 0.1, 0, 3000); },
+      craft: function () {
+        if (!on()) return;
+        tone(1200, 0.07, 'triangle', 0.3);
+        tone(1600, 0.12, 'triangle', 0.26, 0.08);
+        noise(0.06, 0.2, 0, 3200);
+      },
       build: function () {
         if (!on()) return;
-        [0, 0.12, 0.24].forEach(function (d) { noise(0.07, 0.2, d, 700); tone(140, 0.06, 'triangle', 0.1, d); });
+        [0, 0.13, 0.26].forEach(function (d) {
+          noise(0.08, 0.38, d, 750, 250);
+          tone(130, 0.07, 'triangle', 0.22, d);
+        });
       },
       trophy: function () {
         if (!on()) return;
-        [784, 988, 1175, 1568].forEach(function (f, i) { tone(f, 0.12, 'sine', 0.13, i * 0.09); });
+        [784, 988, 1175, 1568].forEach(function (f, i) { tone(f, 0.14, 'sine', 0.24, i * 0.09); });
       },
       pet: function () {
         if (!on()) return;
-        [880, 1108, 1318].forEach(function (f, i) { tone(f, 0.1, 'square', 0.11, i * 0.08); });
+        [880, 1108, 1318].forEach(function (f, i) { tone(f, 0.11, 'square', 0.2, i * 0.08); });
       },
-      bossIntro: function () { if (!on()) return; tone(110, 0.5, 'sawtooth', 0.13, 0, 70); noise(0.3, 0.14, 0.1, 300); },
-      whee: function () { if (on()) tone(280, 0.4, 'square', 0.12, 0, 1100); },
-      grr: function () { if (!on()) return; tone(130, 0.28, 'sawtooth', 0.16, 0, 75); noise(0.18, 0.12, 0, 350); }
+      bossIntro: function () {
+        if (!on()) return;
+        tone(110, 0.55, 'sawtooth', 0.26, 0, 65);
+        noise(0.35, 0.28, 0.1, 320);
+        tone(55, 0.5, 'sine', 0.3, 0.05);
+      },
+      whee: function () { if (on()) tone(280, 0.4, 'square', 0.22, 0, 1100); },
+      grr: function () {
+        if (!on()) return;
+        tone(130, 0.3, 'sawtooth', 0.28, 0, 70);
+        noise(0.2, 0.22, 0, 380);
+      }
     };
   })();
 
-  // Menu click sound via delegation (answers play their own sounds)
+  // Robust audio unlock: revive the context on every interaction (iOS suspends it)
+  ['pointerdown', 'touchend', 'mousedown', 'keydown'].forEach(function (ev) {
+    document.addEventListener(ev, function () { Sound.unlock(); }, { passive: true });
+  });
+
+  // UI click sound via delegation (answers play their own feedback sounds)
   document.addEventListener('click', function (e) {
-    var btn = e.target.closest ? e.target.closest('.mc-btn') : null;
+    if (!e.target.closest) return;
+    var btn = e.target.closest('.mc-btn, .biome-tile, .pet-card, .trophy-card');
     if (btn && !btn.classList.contains('answer')) Sound.click();
   });
-  document.addEventListener('pointerdown', function () { Sound.unlock(); }, { once: true });
 
   // ---------- Speech ----------
   var deVoice = null;
