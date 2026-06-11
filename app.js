@@ -199,12 +199,18 @@
 
   // ---------- Bosses ----------
   var BOSSES = [
-    { id: 'creeper', name: 'Creeper', src: ASSETS.mobs.creeper, hpBonus: 0, unlockAt: 0 },
-    { id: 'zombie', name: 'Zombie', src: ASSETS.mobs.zombie, hpBonus: 0, unlockAt: 0 },
-    { id: 'skeleton', name: 'Skelett', src: ASSETS.mobs.skeleton, hpBonus: 1, unlockAt: 0 },
-    { id: 'witch', name: 'Hexe', src: ASSETS.mobs.witch, hpBonus: 2, unlockAt: 5 },
-    { id: 'piglin', name: 'Piglin', src: ASSETS.mobs.piglin, hpBonus: 3, unlockAt: 12 },
-    { id: 'ghast', name: 'Ghast', src: ASSETS.mobs.ghast, hpBonus: 4, unlockAt: 20 }
+    { id: 'creeper', name: 'Creeper', src: ASSETS.mobs.creeper, hpBonus: 0, unlockAt: 0,
+      introLine: 'Pssssst!', defeatLine: 'Bumm!' },
+    { id: 'zombie', name: 'Zombie', src: ASSETS.mobs.zombie, hpBonus: 0, unlockAt: 0,
+      introLine: 'Uaaargh!', defeatLine: '\u00d6h \u00f6h\u2026' },
+    { id: 'skeleton', name: 'Skelett', src: ASSETS.mobs.skeleton, hpBonus: 1, unlockAt: 0,
+      introLine: 'Klacker, klacker!', defeatLine: 'Klacker\u2026' },
+    { id: 'witch', name: 'Hexe', src: ASSETS.mobs.witch, hpBonus: 2, unlockAt: 5,
+      introLine: 'Hihihihi!', defeatLine: 'Meine Tr\u00e4nke!' },
+    { id: 'piglin', name: 'Piglin', src: ASSETS.mobs.piglin, hpBonus: 3, unlockAt: 12,
+      introLine: 'Grunz, grunz! Her mit dem Gold!', defeatLine: 'Mein Gold!' },
+    { id: 'ghast', name: 'Ghast', src: ASSETS.mobs.ghast, hpBonus: 4, unlockAt: 20,
+      introLine: 'Uuuuuuh!', defeatLine: 'Huhuuu\u2026' }
   ];
   function unlockedBosses() {
     return BOSSES.filter(function (b) { return b.unlockAt <= state.stats.bossesDefeated; });
@@ -213,38 +219,54 @@
   // ---------- Trophies ----------
   var TROPHIES = [
     { id: 'runde1', name: 'Erste Runde geschafft', icon: ASSETS.blocks.grass,
+      prog: function (s) { return { cur: Math.min(s.stats.sessions, 1), max: 1 }; },
       cond: function (s) { return s.stats.sessions >= 1; } },
     { id: 'richtig30', name: '30 Aufgaben richtig', icon: ASSETS.items.apple, pet: 'huhn',
+      prog: function (s) { return { cur: Math.min(s.stats.correct, 30), max: 30 }; },
       cond: function (s) { return s.stats.correct >= 30; } },
     { id: 'richtig100', name: '100 Aufgaben richtig', icon: ASSETS.items.iron_ingot,
+      prog: function (s) { return { cur: Math.min(s.stats.correct, 100), max: 100 }; },
       cond: function (s) { return s.stats.correct >= 100; } },
     { id: 'richtig300', name: '300 Aufgaben richtig', icon: ASSETS.items.gold_ingot,
+      prog: function (s) { return { cur: Math.min(s.stats.correct, 300), max: 300 }; },
       cond: function (s) { return s.stats.correct >= 300; } },
     { id: 'richtig1000', name: '1000 Aufgaben richtig', icon: ASSETS.items.diamond,
+      prog: function (s) { return { cur: Math.min(s.stats.correct, 1000), max: 1000 }; },
       cond: function (s) { return s.stats.correct >= 1000; } },
     { id: 'boss1', name: 'Erster Boss besiegt', icon: ASSETS.mobs.creeper,
+      prog: function (s) { return { cur: Math.min(s.stats.bossesDefeated, 1), max: 1 }; },
       cond: function (s) { return s.stats.bossesDefeated >= 1; } },
     { id: 'boss5', name: '5 Bosse besiegt', icon: ASSETS.mobs.zombie, pet: 'katze',
+      prog: function (s) { return { cur: Math.min(s.stats.bossesDefeated, 5), max: 5 }; },
       cond: function (s) { return s.stats.bossesDefeated >= 5; } },
     { id: 'boss15', name: '15 Bosse besiegt', icon: ASSETS.mobs.skeleton, pet: 'wolf',
+      prog: function (s) { return { cur: Math.min(s.stats.bossesDefeated, 15), max: 15 }; },
       cond: function (s) { return s.stats.bossesDefeated >= 15; } },
     { id: 'boss30', name: '30 Bosse besiegt', icon: ASSETS.mobs.ghast,
+      prog: function (s) { return { cur: Math.min(s.stats.bossesDefeated, 30), max: 30 }; },
       cond: function (s) { return s.stats.bossesDefeated >= 30; } },
     { id: 'serie7', name: 'Serie von 7', icon: ASSETS.items.apple_golden, pet: 'fuchs',
+      prog: function (s) { return { cur: Math.min(s.stats.bestStreak, 7), max: 7 }; },
       cond: function (s) { return s.stats.bestStreak >= 7; } },
     { id: 'haus2', name: 'Holzh\u00fctte gebaut', icon: ASSETS.blocks.planks, pet: 'schwein',
+      prog: function (s) { return { cur: Math.min(s.house, 2), max: 2 }; },
       cond: function (s) { return s.house >= 2; } },
     { id: 'haus5', name: 'Gro\u00dfes Steinhaus gebaut', icon: ASSETS.blocks.ironBlock, pet: 'axolotl',
+      prog: function (s) { return { cur: Math.min(s.house, 5), max: 5 }; },
       cond: function (s) { return s.house >= 5; } },
     { id: 'haus6', name: 'Festung gebaut', icon: ASSETS.blocks.obsidian,
+      prog: function (s) { return { cur: Math.min(s.house, 6), max: 6 }; },
       cond: function (s) { return s.house >= 6; } },
     { id: 'schwert5', name: 'Diamant-Schwert geschmiedet', icon: ASSETS.items.diamond_sword,
+      prog: function (s) { return { cur: s.equip.schwert + 1, max: 5 }; },
       cond: function (s) { return s.equip.schwert === SWORD_TIERS.length - 1; } },
     { id: 'ruestung4', name: 'Volle R\u00fcstung', icon: ASSETS.items.iron_chestplate,
+      prog: function (s) { return { cur: ARMOR_SLOTS.filter(function (sl) { return s.equip[sl.id] >= 0; }).length, max: 4 }; },
       cond: function (s) {
         return ARMOR_SLOTS.every(function (sl) { return s.equip[sl.id] >= 0; });
       } },
     { id: 'biome5', name: 'Alle Biome entdeckt', icon: ASSETS.blocks.netherrack,
+      prog: function (s) { return { cur: Math.min(Math.floor(s.xp / 100) + 1, 5), max: 5 }; },
       cond: function (s) { return Math.floor(s.xp / 100) + 1 >= 5; } }
   ];
 
@@ -291,6 +313,7 @@
       trophies: {},
       seenBosses: {},
       settings: { sound: true, autoSpeak: true },
+      playerName: 'Hugo',
       stats: { answered: 0, correct: 0, byType: {}, sessions: 0, bestStreak: 0, bossesDefeated: 0 },
       mistakes: []
     };
@@ -313,6 +336,7 @@
       if (!s.biome) s.biome = 'forest';
       if (!s.difficulty) s.difficulty = 'leicht';
       if (!s.house || s.house < 1) s.house = 1;
+      if (!s.playerName) s.playerName = 'Hugo';
 
       if (!old.v || old.v < 6) {
         var c = s.stats.correct || 0;
@@ -719,7 +743,9 @@
         if (!on()) return;
         [880, 1108, 1318].forEach(function (f, i) { tone(f, 0.1, 'square', 0.11, i * 0.08); });
       },
-      bossIntro: function () { if (!on()) return; tone(110, 0.5, 'sawtooth', 0.13, 0, 70); noise(0.3, 0.14, 0.1, 300); }
+      bossIntro: function () { if (!on()) return; tone(110, 0.5, 'sawtooth', 0.13, 0, 70); noise(0.3, 0.14, 0.1, 300); },
+      whee: function () { if (on()) tone(280, 0.4, 'square', 0.12, 0, 1100); },
+      grr: function () { if (!on()) return; tone(130, 0.28, 'sawtooth', 0.16, 0, 75); noise(0.18, 0.12, 0, 350); }
     };
   })();
 
@@ -731,15 +757,39 @@
   document.addEventListener('pointerdown', function () { Sound.unlock(); }, { once: true });
 
   // ---------- Speech ----------
+  var deVoice = null;
+  function pickVoice() {
+    try {
+      var vs = window.speechSynthesis.getVoices() || [];
+      deVoice = null;
+      for (var i = 0; i < vs.length; i++) {
+        if (/de[-_]DE/i.test(vs[i].lang)) { deVoice = vs[i]; break; }
+      }
+      if (!deVoice) {
+        for (var j = 0; j < vs.length; j++) {
+          if (/^de/i.test(vs[j].lang)) { deVoice = vs[j]; break; }
+        }
+      }
+    } catch (e) {}
+  }
+  try {
+    pickVoice();
+    window.speechSynthesis.onvoiceschanged = pickVoice;
+  } catch (e) {}
+
   function speak(text) {
     try {
       window.speechSynthesis.cancel();
       var u = new SpeechSynthesisUtterance(text);
       u.lang = 'de-DE';
+      if (deVoice) u.voice = deVoice;
       u.rate = 0.85;
       window.speechSynthesis.speak(u);
     } catch (e) {}
   }
+
+  var PRAISE = ['Super', 'Stark', 'Klasse', 'Wow', 'Spitze'];
+  function praiseLine() { return pick(PRAISE) + ', ' + state.playerName + '!'; }
   var autoSpeakTimer = null;
   function autoSpeak(text, delay) {
     if (!state.settings.autoSpeak) return;
@@ -918,6 +968,7 @@
       streak: 0,
       pendingLevelUp: null,
       firstTry: true,
+      greet: true,
       locked: false
     };
     show('screen-practice');
@@ -940,11 +991,19 @@
       bi.classList.remove('pop'); void bi.offsetWidth; bi.classList.add('pop');
       $('bossintro-name').textContent = session.boss.name;
       Sound.bossIntro();
-      autoSpeak('Achtung! ' + session.boss.name + ' greift an!', 250);
+      shakeScreen();
+      flashRed();
+      autoSpeak('Achtung, ' + state.playerName + '! ' + session.boss.name + ' greift an! ' + session.boss.introLine, 250);
       showOverlay('overlay-bossintro', true);
     } else {
       renderTask();
     }
+  }
+
+  function flashRed() {
+    var f = el('div', 'flash-red');
+    document.body.appendChild(f);
+    setTimeout(function () { if (f.parentNode) f.parentNode.removeChild(f); }, 650);
   }
 
   $('btn-bossintro-next').addEventListener('click', function () {
@@ -1006,9 +1065,18 @@
       petImg.style.display = 'none';
     }
     $('hud-progress').textContent = (session.phase === 'boss')
-      ? 'Boss-Kampf!'
+      ? state.playerName + ' gegen ' + session.boss.name + '!'
       : 'Aufgabe ' + (session.index + 1) + ' / ' + session.tasks.length;
-    $('hud-streak').textContent = session.streak >= 2 ? 'Serie: ' + session.streak : '';
+    var streakEl = $('hud-streak');
+    if (session.streak >= 2) {
+      var txt = 'Serie: ' + session.streak;
+      if (session.streak % STREAK_BONUS_EVERY === STREAK_BONUS_EVERY - 1) txt += ' \u2014 noch 1 bis zum Diamant!';
+      streakEl.textContent = txt;
+      streakEl.classList.toggle('hot', session.streak >= 3);
+    } else {
+      streakEl.textContent = '';
+      streakEl.classList.remove('hot');
+    }
     renderXpBar();
   }
 
@@ -1091,7 +1159,13 @@
     });
 
     renderHUD();
-    autoSpeak(t.speak, 350);
+    $('reward-banner').classList.remove('show');
+    var speech = t.speak;
+    if (session.greet) {
+      session.greet = false;
+      speech = 'Los geht\u2019s, ' + state.playerName + '! ' + speech;
+    }
+    autoSpeak(speech, 350);
   }
 
   // ---------- Answer handling ----------
@@ -1106,7 +1180,7 @@
 
     if (correct) {
       session.locked = true;
-      btn.classList.add('correct');
+      btn.classList.add('correct', 'bounce');
       state.stats.correct++;
       state.stats.byType[t.type].correct++;
 
@@ -1145,6 +1219,9 @@
         bossHitAnimation();
         renderBossHp();
         renderHUD();
+        if (session.firstTry && session.streak > 0 && session.streak % STREAK_BONUS_EVERY === 0) {
+          autoSpeak(praiseLine() + ' ' + session.streak + ' am St\u00fcck \u2014 ein Diamant f\u00fcr dich!', 150);
+        }
         var r = $('boss-img').getBoundingClientRect();
         burst(r.left + r.width / 2, r.top + r.height / 2, [RES.eisen.src, RES.gold.src], 6);
         setTimeout(function () {
@@ -1159,10 +1236,20 @@
       } else {
         Sound.correct();
         Sound.mine();
-        setTimeout(function () { showReward(resKey, xp + bonus, bonusDiamond); }, 550);
+        renderXpBar();
+        if (bonusDiamond) {
+          autoSpeak(praiseLine() + ' ' + session.streak + ' am St\u00fcck \u2014 ein Diamant f\u00fcr dich!', 500);
+          setTimeout(function () { showReward(resKey, xp + bonus, true); }, 550);
+        } else {
+          if (session.streak === 3) autoSpeak(praiseLine(), 150);
+          showInlineReward(resKey, xp + bonus);
+          setTimeout(function () {
+            maybeLevelUp(function () { drainCeremonies(nextTask); });
+          }, 1350);
+        }
       }
     } else {
-      btn.classList.add('wrong');
+      btn.classList.add('wrong', 'shake-x');
       btn.disabled = true;
       session.firstTry = false;
       session.streak = 0;
@@ -1223,7 +1310,7 @@
       $('bosswin-text').textContent = '+' + xpGain + ' XP';
       renderXpBar();
       refreshAllResBars();
-      autoSpeak(session.boss.name + ' besiegt! Du bekommst eine Schatztruhe!', 300);
+      autoSpeak(session.boss.defeatLine + ' ' + state.playerName + ' hat ' + session.boss.name + ' besiegt! Du bekommst eine Schatztruhe!', 300);
       showOverlay('overlay-bosswin', true);
     }, 1000);
   }
@@ -1279,15 +1366,27 @@
     if (levelUpNext) { var n = levelUpNext; levelUpNext = null; n(); }
   });
 
-  // ---------- Reward overlay ----------
+  // ---------- Reward: inline banner + diamond overlay ----------
+  function showInlineReward(resKey, xp) {
+    var b = $('reward-banner');
+    clear(b);
+    b.appendChild(img(RES[resKey].src));
+    b.appendChild(el('span', null, '+1 ' + RES[resKey].name + '  \u00b7  +' + xp + ' XP'));
+    b.classList.remove('show');
+    void b.offsetWidth;
+    b.classList.add('show');
+  }
+
   function showReward(resKey, xp, withDiamond) {
     var item = $('reward-item');
     item.classList.remove('pop');
-    item.src = RES[resKey].src;
+    item.src = withDiamond ? RES.diamant.src : RES[resKey].src;
     void item.offsetWidth;
     item.classList.add('pop');
-    $('reward-text').textContent = '+1 ' + RES[resKey].name + ' geschürft!';
-    $('reward-xp').textContent = '+' + xp + ' XP' + (withDiamond ? '  \u00b7  Serien-Bonus: +1 Diamant!' : '');
+    $('reward-text').textContent = withDiamond
+      ? 'Serien-Bonus: +1 Diamant!'
+      : '+1 ' + RES[resKey].name + ' gesch\u00fcrft!';
+    $('reward-xp').textContent = '+' + xp + ' XP' + (withDiamond ? '  \u00b7  Dazu: +1 ' + RES[resKey].name : '');
     renderXpBar();
     showOverlay('overlay-reward', true);
   }
@@ -1413,7 +1512,7 @@
 
     $('summary-pig').style.display = petActive('schwein') ? 'flex' : 'none';
 
-    $('summary-title').textContent = session.bossDefeated ? session.boss.name + ' besiegt!' : 'Geschafft!';
+    $('summary-title').textContent = session.bossDefeated ? session.boss.name + ' besiegt!' : 'Geschafft, ' + state.playerName + '!';
     $('summary-stats').textContent = '+' + session.xpGained + ' XP  \u00b7  Level ' + levelOf(state.xp);
 
     var hint = '';
@@ -1756,13 +1855,28 @@
       var card = el('button', 'trophy-card' + (has ? '' : ' locked'));
       card.appendChild(img(t.icon, 'trophy-img'));
       card.appendChild(el('div', 'trophy-label', t.name));
+      var p = null;
+      if (!has && t.prog) {
+        p = t.prog(state);
+        var bar = el('div', 'trophy-prog');
+        var fill = el('div', 'trophy-prog-fill');
+        fill.style.width = Math.min(100, Math.round((p.cur / p.max) * 100)) + '%';
+        bar.appendChild(fill);
+        card.appendChild(bar);
+      }
       if (t.pet) {
         var pb = el('div', 'trophy-pet');
         pb.appendChild(img(petById(t.pet).src));
         card.appendChild(pb);
       }
       card.addEventListener('click', function () {
-        autoSpeak(has ? ('Troph\u00e4e: ' + t.name + '. Geschafft!') : (t.name + '. Das hast du noch nicht geschafft.'), 100);
+        if (has) {
+          autoSpeak('Troph\u00e4e: ' + t.name + '. Geschafft!', 100);
+        } else if (p) {
+          autoSpeak(t.name + '. Du hast schon ' + p.cur + ' von ' + p.max + '!', 100);
+        } else {
+          autoSpeak(t.name + '. Das hast du noch nicht geschafft.', 100);
+        }
       });
       grid.appendChild(card);
     });
@@ -1773,6 +1887,7 @@
   // ---------- Start screen ----------
   function renderStart() {
     var lvl = levelOf(state.xp);
+    $('start-name').textContent = state.playerName;
     $('start-level').textContent = 'Level ' + lvl + '  \u00b7  ' + state.xp + ' XP  \u00b7  ' + totalHearts() + ' Herzen';
     $('start-pickaxe').src = pickaxeForLevel(lvl).src;
     renderResBar('res-start');
@@ -1804,6 +1919,47 @@
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(renderGroundStrip, 150);
   });
+
+  // ---------- Easter Eggs ----------
+  $('start-pickaxe').addEventListener('click', function () {
+    var p = $('start-pickaxe');
+    p.classList.remove('spin'); void p.offsetWidth; p.classList.add('spin');
+    Sound.whee();
+  });
+  $('start-face').addEventListener('click', function () {
+    var f = $('start-face');
+    f.classList.remove('bounce-egg'); void f.offsetWidth; f.classList.add('bounce-egg');
+    Sound.pet();
+    autoSpeak('Hallo, ich bin ' + state.playerName + '!', 50);
+  });
+  $('start-equip').addEventListener('click', function (e) {
+    if (e.target.classList && e.target.classList.contains('start-pet')) {
+      e.target.classList.remove('bounce-egg'); void e.target.offsetWidth; e.target.classList.add('bounce-egg');
+      Sound.pet();
+    }
+  });
+  $('boss-img').addEventListener('click', function () {
+    var b = $('boss-img');
+    b.classList.remove('wobble'); void b.offsetWidth; b.classList.add('wobble');
+    Sound.grr();
+  });
+
+  var STROLLERS = [ASSETS.mobs.pig, ASSETS.mobs.chicken, ASSETS.mobs.cat, ASSETS.mobs.wolf, ASSETS.mobs.fox, ASSETS.mobs.axolotl];
+  setInterval(function () {
+    if (!$('screen-start').classList.contains('active')) return;
+    if (Math.random() < 0.4) return;
+    var wrap = el('div', 'strolling-mob');
+    var face = img(pick(STROLLERS));
+    wrap.appendChild(face);
+    var ltr = Math.random() < 0.5;
+    wrap.style.left = ltr ? '-70px' : (window.innerWidth + 10) + 'px';
+    document.body.appendChild(wrap);
+    var dx = (window.innerWidth + 140) * (ltr ? 1 : -1);
+    requestAnimationFrame(function () {
+      wrap.style.transform = 'translateX(' + dx + 'px)';
+    });
+    setTimeout(function () { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 9500);
+  }, 11000);
 
   $('btn-start-game').addEventListener('click', startSession);
   $('btn-start-home').addEventListener('click', function () { renderHome(); show('screen-home'); });
@@ -1922,9 +2078,16 @@
 
     renderDiffButtons();
     renderToggles();
+    $('inp-name').value = state.playerName;
     $('parent-gate-panel').style.display = 'none';
     $('parent-stats-panel').style.display = 'flex';
   }
+
+  $('inp-name').addEventListener('input', function () {
+    var v = $('inp-name').value.trim();
+    state.playerName = v || 'Hugo';
+    saveState();
+  });
 
   var DIFFS = ['leicht', 'mittel', 'schwer', 'profi'];
 

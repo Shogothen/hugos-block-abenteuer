@@ -9,7 +9,7 @@
 <title>Hugos Block-Abenteuer</title>
 <link rel="icon" type="image/png" href="icon-180.png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 
@@ -18,8 +18,10 @@
   <div class="mc-panel start-panel">
     <h1 class="title">Hugos<br>Block-Abenteuer</h1>
     <div class="start-hero">
+      <img id="start-face" src="assets/minecraft/mobs/steve_face.png" alt="" class="start-face">
       <img id="start-pickaxe" src="assets/minecraft/items/wood_pickaxe.png" alt="" class="start-pick">
       <div>
+        <div id="start-name" class="start-name">Hugo</div>
         <div id="start-level" class="start-level">Level 1</div>
         <div id="start-equip" class="start-equip"></div>
       </div>
@@ -48,15 +50,16 @@
         <img class="btn-ico" src="assets/minecraft/items/apple_golden.png" alt="">
         <span>Trophäen</span>
       </button>
-      <button id="btn-start-world" class="mc-btn menu-btn">
+      <button id="btn-start-world" class="mc-btn menu-btn wide">
         <img class="btn-ico" src="assets/minecraft/items/compass_item.png" alt="">
         <span>Weltkarte</span>
       </button>
-      <button id="btn-start-parent" class="mc-btn menu-btn">
-        <img class="btn-ico" src="assets/minecraft/items/book_normal.png" alt="">
-        <span>Eltern</span>
-      </button>
     </div>
+
+    <button id="btn-start-parent" class="mc-btn parent-link">
+      <img class="btn-ico" src="assets/minecraft/items/book_normal.png" alt="">
+      <span>Eltern</span>
+    </button>
   </div>
   <div id="ground-strip" class="ground-strip"></div>
 </section>
@@ -65,6 +68,7 @@
 <section id="screen-practice" class="screen">
   <div class="hud">
     <div class="hud-row">
+      <img id="hud-avatar" class="hud-avatar" src="assets/minecraft/mobs/steve_face.png" alt="">
       <div id="hud-hearts" class="hud-hearts"></div>
       <img id="hud-pet" class="hud-pet" src="" alt="" style="display:none">
       <div id="hud-progress" class="hud-progress"></div>
@@ -104,6 +108,7 @@
     <div id="task-visual" class="task-visual"></div>
     <div id="task-equation" class="task-equation"></div>
     <div id="answers" class="answers"></div>
+    <div id="reward-banner" class="reward-banner"></div>
   </div>
 </section>
 
@@ -201,6 +206,8 @@
         <button id="diff-schwer" class="mc-btn small"><span>Schwer</span></button>
         <button id="diff-profi" class="mc-btn small"><span>Profi</span></button>
       </div>
+      <div class="diff-title">Name des Kindes:</div>
+      <input id="inp-name" class="mc-input" maxlength="14" autocomplete="off">
       <div class="diff-title">Einstellungen:</div>
       <div class="diff-row">
         <button id="tog-sound" class="mc-btn small"><span>Sound: An</span></button>
@@ -322,6 +329,6 @@
   </div>
 </div>
 
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>
