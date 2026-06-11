@@ -2239,29 +2239,6 @@
     return 'pan-evening';
   }
 
-  function panTree(xPx, baseY, leafTile, logTile, big) {
-    var t = el('div', 'pan-tree');
-    t.style.left = xPx + 'px';
-    t.style.bottom = baseY + 'px';
-    var s = big ? 1.3 : 1;
-    var trunk = el('div', 'pan-trunk');
-    trunk.style.width = Math.round(10 * s) + 'px';
-    trunk.style.height = Math.round(24 * s) + 'px';
-    trunk.style.backgroundImage = "url('" + logTile + "')";
-    var c1 = el('div', 'pan-canopy');
-    c1.style.width = Math.round(52 * s) + 'px';
-    c1.style.height = Math.round(20 * s) + 'px';
-    c1.style.bottom = Math.round(20 * s) + 'px';
-    c1.style.backgroundImage = "url('" + leafTile + "')";
-    var c2 = el('div', 'pan-canopy');
-    c2.style.width = Math.round(30 * s) + 'px';
-    c2.style.height = Math.round(13 * s) + 'px';
-    c2.style.bottom = Math.round(38 * s) + 'px';
-    c2.style.backgroundImage = "url('" + leafTile + "')";
-    t.appendChild(trunk); t.appendChild(c1); t.appendChild(c2);
-    return t;
-  }
-
   function buildPanorama(container) {
     var stamp = state.house + ':' + (state.activePet || '') + ':' + panPhase();
     if (container.getAttribute('data-stamp') === stamp) return;
@@ -2282,34 +2259,28 @@
       container.appendChild(cloud);
     }
 
-    // Distant treelines: dark oak forest + cherry clumps
+    // Continuous mixed treeline down to the ground: no sky gaps possible
     var backF = el('div', 'pan-layer back');
-    var h0 = rnd(2, 4);
+    var cherryCenters = [Math.floor(cols * 0.18), Math.floor(cols * 0.62), Math.floor(cols * 0.9)];
+    var cherryWidths = cherryCenters.map(function () { return rnd(2, 4); });
+    var th = rnd(5, 6);
     for (var i = 0; i < cols; i++) {
-      h0 += rnd(-1, 1); if (h0 < 2) h0 = 2; if (h0 > 5) h0 = 5;
+      th += [-1, 0, 0, 0, 1][rnd(0, 4)];
+      if (th < 4) th = 4; if (th > 7) th = 7;
+      var isCherry = cherryCenters.some(function (c, k) { return Math.abs(i - c) <= cherryWidths[k]; });
       var col0 = el('div', 'pan-col');
       col0.style.left = (i * T) + 'px';
-      col0.style.height = (h0 * T) + 'px';
-      col0.style.backgroundImage = "url('" + ASSETS.blocks.leavesOak + "')";
+      col0.style.height = (th * T) + 'px';
+      col0.style.backgroundImage = "url('" + (isCherry ? PAN_BLOCKS.cherry : ASSETS.blocks.leavesOak) + "')";
       backF.appendChild(col0);
     }
     container.appendChild(backF);
-    var clump = el('div', 'pan-layer cherryclump');
-    [0.12, 0.55, 0.8].forEach(function (cx) {
-      var c = el('div', 'pan-col');
-      c.style.left = Math.round(cx * w) + 'px';
-      c.style.width = rnd(48, 80) + 'px';
-      c.style.height = rnd(2, 3) * T + 'px';
-      c.style.backgroundImage = "url('" + PAN_BLOCKS.cherry + "')";
-      clump.appendChild(c);
-    });
-    container.appendChild(clump);
 
     // Midground: real stepped block terrain (grass cap + dirt fill)
     var hts = [];
     var h = rnd(1, 2);
     for (var c2i = 0; c2i < cols; c2i++) {
-      h += rnd(0, 2) - 1; if (h < 1) h = 1; if (h > 3) h = 3;
+      h += [-1, 0, 0, 0, 0, 1][rnd(0, 5)]; if (h < 1) h = 1; if (h > 3) h = 3;
       hts.push(h);
     }
     // Flat plateau for the house
@@ -2336,22 +2307,15 @@
     }
     container.appendChild(terrain);
 
-    // Waterfall from the cliff into a pool
-    var fallH = (5 - 1) * T;
+    // Waterfall fixed to the cliff's left face, pool sunk into the ground
     var fall = el('div', 'pan-waterfall');
-    fall.style.right = ((cols - cliffStart) * T - 2) + 'px';
-    fall.style.height = fallH + 'px';
+    fall.style.left = (cliffStart * T - 11) + 'px';
+    fall.style.height = (4 * T) + 'px';
     fall.style.bottom = T + 'px';
     container.appendChild(fall);
     var pool = el('div', 'pan-pool');
-    pool.style.right = ((cols - cliffStart) * T - 6) + 'px';
+    pool.style.left = (cliffStart * T - 26) + 'px';
     container.appendChild(pool);
-
-    // Trees standing on the terrain
-    var t1 = Math.max(1, hStart - 5);
-    container.appendChild(panTree(t1 * T, hts[t1] * T, PAN_BLOCKS.cherry, PAN_BLOCKS.cherryLog, true));
-    var t2 = Math.min(cols - 6, hStart + hCols + 3);
-    container.appendChild(panTree(t2 * T, hts[t2] * T, ASSETS.blocks.leavesOak, ASSETS.blocks.logOak, false));
 
     // Grass tufts on column tops
     for (var gi = 0; gi < 6; gi++) {

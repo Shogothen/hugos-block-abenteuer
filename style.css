@@ -791,17 +791,11 @@ body.shake { animation: screen-shake 0.35s ease; }
 .pan-layer { position: absolute; left: -16px; right: -16px; bottom: 0; height: 130px; }
 .pan-col { position: absolute; bottom: 0; width: 16px; background-size: 16px 16px; background-repeat: repeat; }
 .pan-layer.back {
-  bottom: 34px;
-  filter: brightness(0.55) saturate(0.65);
-  opacity: 0.9;
+  bottom: 0;
+  filter: brightness(0.62) saturate(0.75);
   animation: layer-drift 46s ease-in-out infinite alternate;
 }
-.pan-evening .pan-layer.back { filter: brightness(0.5) saturate(0.55) hue-rotate(25deg); }
-.pan-layer.cherryclump {
-  bottom: 38px;
-  filter: brightness(0.8);
-  animation: layer-drift 34s ease-in-out infinite alternate-reverse;
-}
+.pan-evening .pan-layer.back { filter: brightness(0.55) saturate(0.6) hue-rotate(15deg); }
 @keyframes layer-drift {
   0% { transform: translateX(-7px); }
   100% { transform: translateX(7px); }
@@ -831,7 +825,7 @@ body.shake { animation: screen-shake 0.35s ease; }
 }
 .pan-pool {
   position: absolute;
-  bottom: 7px;
+  bottom: 9px;
   width: 34px; height: 11px;
   background-image: url('assets/minecraft/blocks/water_still_blue.png');
   background-size: 16px 512px;
