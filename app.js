@@ -2240,6 +2240,66 @@
     return 'pan-evening';
   }
 
+  var WALK = A + 'mobs/walk/';
+  var WALKERS = {
+    pig: {
+      w: 40, h: 30,
+      legs: { src: WALK + 'pig_leg.png', w: 8, h: 12, near: [3, 21], far: [5, 23], bottom: 0 },
+      body: { src: WALK + 'pig_body.png', w: 32, h: 16, left: 0, bottom: 10 },
+      head: { src: WALK + 'pig_head.png', w: 16, h: 16, left: 24, bottom: 13 }
+    },
+    cow: {
+      w: 42, h: 48,
+      legs: { src: WALK + 'cow_leg.png', w: 8, h: 22, near: [4, 24], far: [6, 26], bottom: 0 },
+      body: { src: WALK + 'cow_body.png', w: 36, h: 20, left: 0, bottom: 20 },
+      head: { src: WALK + 'cow_head.png', w: 12, h: 16, left: 30, bottom: 30 }
+    },
+    chicken: {
+      w: 26, h: 30,
+      body: { src: WALK + 'chicken_body.png', w: 18, h: 14, left: 0, bottom: 2 },
+      wing: { src: WALK + 'chicken_wing.png', w: 14, h: 10, left: 2, bottom: 4 },
+      head: { src: WALK + 'chicken_head.png', w: 12, h: 17, left: 11, bottom: 12 }
+    }
+  };
+
+  function walkerPart(spec, cls) {
+    var p = img(spec.src, cls);
+    p.style.width = spec.w + 'px';
+    p.style.height = spec.h + 'px';
+    p.style.left = (spec.left || 0) + 'px';
+    p.style.bottom = spec.bottom + 'px';
+    return p;
+  }
+
+  function makeWalker(kind, xPx, groundPx, dist) {
+    var def = WALKERS[kind];
+    var wk = el('div', 'pan-walker ' + kind);
+    wk.style.left = xPx + 'px';
+    wk.style.bottom = groundPx + 'px';
+    wk.style.setProperty('--walk-dist', Math.max(32, dist) + 'px');
+    var dur = Math.max(6, Math.round(Math.max(32, dist) / 13));
+    wk.style.animationDuration = dur + 's';
+    var flip = el('div', 'walker-flip');
+    flip.style.width = def.w + 'px';
+    flip.style.height = def.h + 'px';
+    flip.style.animationDuration = (dur * 2) + 's';
+    if (def.legs) {
+      var L = def.legs;
+      flip.appendChild(walkerPart({ src: L.src, w: L.w, h: L.h, left: L.far[0], bottom: L.bottom }, 'w-leg far a'));
+      flip.appendChild(walkerPart({ src: L.src, w: L.w, h: L.h, left: L.far[1], bottom: L.bottom }, 'w-leg far b'));
+    }
+    flip.appendChild(walkerPart(def.body, 'w-body'));
+    if (def.wing) flip.appendChild(walkerPart(def.wing, 'w-wing'));
+    flip.appendChild(walkerPart(def.head, 'w-head'));
+    if (def.legs) {
+      var L2 = def.legs;
+      flip.appendChild(walkerPart({ src: L2.src, w: L2.w, h: L2.h, left: L2.near[0], bottom: L2.bottom }, 'w-leg b'));
+      flip.appendChild(walkerPart({ src: L2.src, w: L2.w, h: L2.h, left: L2.near[1], bottom: L2.bottom }, 'w-leg a'));
+    }
+    wk.appendChild(flip);
+    return wk;
+  }
+
   function buildPanorama(container) {
     var stamp = state.house + ':' + (state.activePet || '') + ':' + panPhase();
     if (container.getAttribute('data-stamp') === stamp) return;
@@ -2335,6 +2395,24 @@
       container.appendChild(g);
     }
 
+    // Wandernde Tiere auf flachen Strecken (nicht durchs Haus, nicht im Teich)
+    var flats = [];
+    var run = 1;
+    for (var fi = 1; fi < cols; fi++) {
+      var blocked = (fi >= cliffStart - 3) || (fi >= hStart - 1 && fi <= hStart + hCols);
+      var prevBlocked = (fi - 1 >= cliffStart - 3) || (fi - 1 >= hStart - 1 && fi - 1 <= hStart + hCols);
+      if (!blocked && !prevBlocked && hts[fi] === hts[fi - 1]) run++;
+      else {
+        if (run >= 6) flats.push({ s: fi - run, len: run, h: hts[fi - 1] });
+        run = 1;
+      }
+    }
+    if (run >= 6) flats.push({ s: cols - run, len: run, h: hts[cols - 1] });
+    var kinds = shuffle(['pig', 'cow', 'chicken']);
+    flats.slice(0, 2).forEach(function (seg, k) {
+      container.appendChild(makeWalker(kinds[k % kinds.length], seg.s * T + 4, seg.h * T, (seg.len - 3) * T));
+    });
+
     // The real house on its glade plateau
     var house = el('div', 'pan-house build-grid');
     renderBlueprint(house, stage, cell, false);
@@ -2429,22 +2507,6 @@
     Sound.grr();
   });
 
-  var STROLLERS = [ASSETS.mobs.pig, ASSETS.mobs.chicken, ASSETS.mobs.cat, ASSETS.mobs.wolf, ASSETS.mobs.fox, ASSETS.mobs.axolotl];
-  setInterval(function () {
-    if (!$('screen-start').classList.contains('active')) return;
-    if (Math.random() < 0.4) return;
-    var wrap = el('div', 'strolling-mob');
-    var face = img(pick(STROLLERS));
-    wrap.appendChild(face);
-    var ltr = Math.random() < 0.5;
-    wrap.style.left = ltr ? '-70px' : (window.innerWidth + 10) + 'px';
-    document.body.appendChild(wrap);
-    var dx = (window.innerWidth + 140) * (ltr ? 1 : -1);
-    requestAnimationFrame(function () {
-      wrap.style.transform = 'translateX(' + dx + 'px)';
-    });
-    setTimeout(function () { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 9500);
-  }, 11000);
 
   $('btn-start-game').addEventListener('click', startSession);
   $('btn-start-home').addEventListener('click', function () { renderHome(); show('screen-home'); });
