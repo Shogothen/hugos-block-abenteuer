@@ -1,8 +1,8 @@
 /* ============================================================
-   Hugos Block-Abenteuer — App-Logik (Version 6.0)
-   Ressourcen-Wirtschaft, Schmiede mit Ausrüstung (echte Effekte),
-   Haus-Ausbau in 6 Stufen, skalierende Boss-Kämpfe mit Beute,
-   4 Schwierigkeitsstufen bis 100, Fehler-Wiederholung.
+   Hugos Block-Abenteuer — App-Logik (Version 7.0)
+   Neu: 8-Bit-Sound-Engine, Auto-Vorlesen für Nicht-Leser,
+   Begleiter-Tiere mit echten Boni, Trophäen-Wand,
+   6 Bosse mit progressiver Freischaltung.
    ============================================================ */
 
 (function () {
@@ -33,13 +33,28 @@
       diamond: A + 'items/diamond.png',
       gold_ingot: A + 'items/gold_ingot.png',
       iron_ingot: A + 'items/iron_ingot.png',
-      apple_golden: A + 'items/apple_golden.png'
+      apple: A + 'items/apple.png',
+      apple_golden: A + 'items/apple_golden.png',
+      diamond_sword: A + 'items/diamond_sword.png',
+      iron_chestplate: A + 'items/iron_chestplate.png',
+      iron_sword: A + 'items/iron_sword.png',
+      compass: A + 'items/compass_item.png',
+      book: A + 'items/book_normal.png'
     },
     mobs: {
       steve: A + 'mobs/steve_face.png',
       creeper: A + 'mobs/creeper_face.png',
       zombie: A + 'mobs/zombie_face.png',
-      skeleton: A + 'mobs/skeleton_face.png'
+      skeleton: A + 'mobs/skeleton_face.png',
+      witch: A + 'mobs/witch_face.png',
+      piglin: A + 'mobs/piglin_face.png',
+      ghast: A + 'mobs/ghast_face.png',
+      pig: A + 'mobs/pig_face.png',
+      chicken: A + 'mobs/chicken_face.png',
+      cat: A + 'mobs/cat_face.png',
+      wolf: A + 'mobs/wolf_face.png',
+      fox: A + 'mobs/fox_face.png',
+      axolotl: A + 'mobs/axolotl_face.png'
     },
     ui: {
       heart: A + 'ui/heart.png',
@@ -75,7 +90,6 @@
   };
   var RES_KEYS = ['holz', 'stein', 'eisen', 'gold', 'diamant'];
 
-  // Drop weights per difficulty (must sum to 100)
   var DROP_WEIGHTS = {
     leicht: { holz: 45, stein: 35, eisen: 15, gold: 4, diamant: 1 },
     mittel: { holz: 35, stein: 33, eisen: 20, gold: 9, diamant: 3 },
@@ -137,7 +151,7 @@
     },
     {
       name: 'Festung', cost: { stein: 14, eisen: 10, gold: 6, diamant: 3 }, effect: '+2 Herzen \u00b7 Doppelte Boss-Beute',
-      map: { O: 'obsidian', G: 'glowstone', D: 'diamondBlock', Au: 'goldBlock', I: 'ironBlock', N: 'goldBlock' },
+      map: { O: 'obsidian', G: 'glowstone', D: 'diamondBlock', I: 'ironBlock', N: 'goldBlock' },
       rows: ['O.O.O.O.O', 'OOOOOOOOO', 'OGO...OGO', 'O.......O', 'O..D.D..O', 'O.......O', 'OOOO.OOOO', 'N.......N']
     }
   ];
@@ -162,8 +176,79 @@
     return Math.min(b, 4);
   }
 
+  // ---------- Pets ----------
+  var PETS = [
+    { id: 'huhn', name: 'Huhn', src: ASSETS.mobs.chicken,
+      bonus: '+1 Herz', speakBonus: 'Das Huhn schenkt dir ein extra Herz.' },
+    { id: 'schwein', name: 'Schwein', src: ASSETS.mobs.pig,
+      bonus: '+2 Holz und +2 Stein nach jeder Runde', speakBonus: 'Das Schwein sammelt nach jeder Runde Holz und Steine f\u00fcr dich.' },
+    { id: 'katze', name: 'Katze', src: ASSETS.mobs.cat,
+      bonus: 'Findet \u00f6fter Sch\u00e4tze', speakBonus: 'Die Katze hat Gl\u00fcck und findet \u00f6fter seltene Sch\u00e4tze.' },
+    { id: 'wolf', name: 'Wolf', src: ASSETS.mobs.wolf,
+      bonus: '+1 Schwert-Schaden', speakBonus: 'Der Wolf k\u00e4mpft mit dir. Dein Schwert macht mehr Schaden.' },
+    { id: 'fuchs', name: 'Fuchs', src: ASSETS.mobs.fox,
+      bonus: '+1 Diamant bei jedem Boss-Sieg', speakBonus: 'Der Fuchs stibitzt nach jedem Boss-Sieg einen extra Diamanten.' },
+    { id: 'axolotl', name: 'Axolotl', src: ASSETS.mobs.axolotl,
+      bonus: 'Sch\u00fctzt einmal pro Runde ein Herz', speakBonus: 'Der Axolotl besch\u00fctzt dich. Einmal pro Runde verlierst du kein Herz.' }
+  ];
+  function petById(id) {
+    for (var i = 0; i < PETS.length; i++) if (PETS[i].id === id) return PETS[i];
+    return null;
+  }
+  function petActive(id) { return state.activePet === id && !!state.pets[id]; }
+
+  // ---------- Bosses ----------
+  var BOSSES = [
+    { id: 'creeper', name: 'Creeper', src: ASSETS.mobs.creeper, hpBonus: 0, unlockAt: 0 },
+    { id: 'zombie', name: 'Zombie', src: ASSETS.mobs.zombie, hpBonus: 0, unlockAt: 0 },
+    { id: 'skeleton', name: 'Skelett', src: ASSETS.mobs.skeleton, hpBonus: 1, unlockAt: 0 },
+    { id: 'witch', name: 'Hexe', src: ASSETS.mobs.witch, hpBonus: 2, unlockAt: 5 },
+    { id: 'piglin', name: 'Piglin', src: ASSETS.mobs.piglin, hpBonus: 3, unlockAt: 12 },
+    { id: 'ghast', name: 'Ghast', src: ASSETS.mobs.ghast, hpBonus: 4, unlockAt: 20 }
+  ];
+  function unlockedBosses() {
+    return BOSSES.filter(function (b) { return b.unlockAt <= state.stats.bossesDefeated; });
+  }
+
+  // ---------- Trophies ----------
+  var TROPHIES = [
+    { id: 'runde1', name: 'Erste Runde geschafft', icon: ASSETS.blocks.grass,
+      cond: function (s) { return s.stats.sessions >= 1; } },
+    { id: 'richtig30', name: '30 Aufgaben richtig', icon: ASSETS.items.apple, pet: 'huhn',
+      cond: function (s) { return s.stats.correct >= 30; } },
+    { id: 'richtig100', name: '100 Aufgaben richtig', icon: ASSETS.items.iron_ingot,
+      cond: function (s) { return s.stats.correct >= 100; } },
+    { id: 'richtig300', name: '300 Aufgaben richtig', icon: ASSETS.items.gold_ingot,
+      cond: function (s) { return s.stats.correct >= 300; } },
+    { id: 'richtig1000', name: '1000 Aufgaben richtig', icon: ASSETS.items.diamond,
+      cond: function (s) { return s.stats.correct >= 1000; } },
+    { id: 'boss1', name: 'Erster Boss besiegt', icon: ASSETS.mobs.creeper,
+      cond: function (s) { return s.stats.bossesDefeated >= 1; } },
+    { id: 'boss5', name: '5 Bosse besiegt', icon: ASSETS.mobs.zombie, pet: 'katze',
+      cond: function (s) { return s.stats.bossesDefeated >= 5; } },
+    { id: 'boss15', name: '15 Bosse besiegt', icon: ASSETS.mobs.skeleton, pet: 'wolf',
+      cond: function (s) { return s.stats.bossesDefeated >= 15; } },
+    { id: 'boss30', name: '30 Bosse besiegt', icon: ASSETS.mobs.ghast,
+      cond: function (s) { return s.stats.bossesDefeated >= 30; } },
+    { id: 'serie7', name: 'Serie von 7', icon: ASSETS.items.apple_golden, pet: 'fuchs',
+      cond: function (s) { return s.stats.bestStreak >= 7; } },
+    { id: 'haus2', name: 'Holzh\u00fctte gebaut', icon: ASSETS.blocks.planks, pet: 'schwein',
+      cond: function (s) { return s.house >= 2; } },
+    { id: 'haus5', name: 'Gro\u00dfes Steinhaus gebaut', icon: ASSETS.blocks.ironBlock, pet: 'axolotl',
+      cond: function (s) { return s.house >= 5; } },
+    { id: 'haus6', name: 'Festung gebaut', icon: ASSETS.blocks.obsidian,
+      cond: function (s) { return s.house >= 6; } },
+    { id: 'schwert5', name: 'Diamant-Schwert geschmiedet', icon: ASSETS.items.diamond_sword,
+      cond: function (s) { return s.equip.schwert === SWORD_TIERS.length - 1; } },
+    { id: 'ruestung4', name: 'Volle R\u00fcstung', icon: ASSETS.items.iron_chestplate,
+      cond: function (s) {
+        return ARMOR_SLOTS.every(function (sl) { return s.equip[sl.id] >= 0; });
+      } },
+    { id: 'biome5', name: 'Alle Biome entdeckt', icon: ASSETS.blocks.netherrack,
+      cond: function (s) { return Math.floor(s.xp / 100) + 1 >= 5; } }
+  ];
+
   // ---------- Core constants ----------
-  var SESSION_LENGTH = 8;
   var XP_PER_LEVEL = 100;
   var STREAK_BONUS_EVERY = 5;
   var STREAK_BONUS_XP = 5;
@@ -176,12 +261,6 @@
     { src: A + 'items/diamond_pickaxe.png', name: 'Diamant-Spitzhacke' }
   ];
   function pickaxeForLevel(level) { return PICKAXES[Math.min(level - 1, PICKAXES.length - 1)]; }
-
-  var BOSSES = [
-    { id: 'creeper', name: 'Creeper' },
-    { id: 'zombie', name: 'Zombie' },
-    { id: 'skeleton', name: 'Skelett' }
-  ];
 
   var BIOMES = [
     { id: 'forest', name: 'Wald', blockKey: 'grass', minLevel: 1 },
@@ -200,13 +279,18 @@
 
   function defaultState() {
     return {
-      v: 6,
+      v: 7,
       xp: 0,
       biome: 'forest',
       difficulty: 'leicht',
       res: { holz: 0, stein: 0, eisen: 0, gold: 0, diamant: 0 },
       equip: { schwert: -1, helm: -1, brust: -1, hose: -1, stiefel: -1 },
       house: 1,
+      pets: {},
+      activePet: null,
+      trophies: {},
+      seenBosses: {},
+      settings: { sound: true, autoSpeak: true },
       stats: { answered: 0, correct: 0, byType: {}, sessions: 0, bestStreak: 0, bossesDefeated: 0 },
       mistakes: []
     };
@@ -217,16 +301,19 @@
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return defaultState();
       var old = JSON.parse(raw);
-      var s = Object.assign(defaultState(), old);
       var d = defaultState();
-      s.stats = Object.assign(d.stats, old.stats || {});
-      s.res = Object.assign(d.res, old.res || {});
-      s.equip = Object.assign(d.equip, old.equip || {});
+      var s = Object.assign(d, old);
+      s.stats = Object.assign(defaultState().stats, old.stats || {});
+      s.res = Object.assign(defaultState().res, old.res || {});
+      s.equip = Object.assign(defaultState().equip, old.equip || {});
+      s.settings = Object.assign(defaultState().settings, old.settings || {});
+      s.pets = old.pets || {};
+      s.trophies = old.trophies || {};
+      s.seenBosses = old.seenBosses || {};
       if (!s.biome) s.biome = 'forest';
       if (!s.difficulty) s.difficulty = 'leicht';
       if (!s.house || s.house < 1) s.house = 1;
 
-      // Migration from versions before 6: convert progress into resources
       if (!old.v || old.v < 6) {
         var c = s.stats.correct || 0;
         var inv = old.inventory || {};
@@ -236,8 +323,8 @@
         s.res.eisen += Math.min(15, Math.round(c * 0.2));
         s.res.gold += Math.min(8, Math.round(c * 0.1)) + (inv.apple_golden || 0);
         s.res.diamant += (inv.diamond || 0) + Math.min(5, Math.round(c * 0.05));
-        s.v = 6;
       }
+      s.v = 7;
       return s;
     } catch (e) { return defaultState(); }
   }
@@ -258,16 +345,22 @@
       var t = state.equip[sl.id];
       if (t >= 0) pts += t + 1;
     });
-    return pts; // 0..16
+    return pts;
   }
   function totalHearts() {
-    return Math.min(10, 5 + Math.floor(armorPoints() / 3) + houseHeartBonus(state.house));
+    var h = 5 + Math.floor(armorPoints() / 3) + houseHeartBonus(state.house);
+    if (petActive('huhn')) h += 1;
+    return Math.min(10, h);
   }
   function swordDamage() {
-    return state.equip.schwert < 0 ? 1 : state.equip.schwert + 2; // 1..6
+    var d = state.equip.schwert < 0 ? 1 : state.equip.schwert + 2;
+    if (petActive('wolf')) d += 1;
+    return d;
   }
   function bossRotation() { return Math.floor(state.stats.bossesDefeated / 3); }
-  function bossMaxHp() { return Math.min(4 + 3 * bossRotation(), 16); }
+  function bossMaxHp(boss) {
+    return Math.min(4 + 3 * bossRotation() + (boss ? boss.hpBonus : 0), 18);
+  }
   function bossLoot() {
     var rot = bossRotation();
     var loot = {
@@ -278,9 +371,10 @@
       diamant: Math.max(1, Math.floor((rot + 1) / 2))
     };
     if (state.house >= 6) RES_KEYS.forEach(function (k) { if (loot[k]) loot[k] *= 2; });
+    if (petActive('fuchs')) loot.diamant += 1;
     return loot;
   }
-  function bossXp() { return 25 + 5 * bossRotation(); }
+  function bossXp(boss) { return 25 + 5 * bossRotation() + 3 * (boss ? boss.hpBonus : 0); }
 
   // ---------- Helpers ----------
   function $(id) { return document.getElementById(id); }
@@ -550,13 +644,112 @@
       genHalf: genHalf, genMissing: genMissing, genMul: genMul, genCount: genCount,
       genCompare: genCompare, taskFromSignature: taskFromSignature,
       HOUSE_STAGES: HOUSE_STAGES, SWORD_TIERS: SWORD_TIERS, ARMOR_TIERS: ARMOR_TIERS,
-      ARMOR_SLOTS: ARMOR_SLOTS, DROP_WEIGHTS: DROP_WEIGHTS, SESSION_PLANS: SESSION_PLANS
+      ARMOR_SLOTS: ARMOR_SLOTS, DROP_WEIGHTS: DROP_WEIGHTS, SESSION_PLANS: SESSION_PLANS,
+      TROPHIES: TROPHIES, PETS: PETS, BOSSES: BOSSES
     };
     return;
   }
 
+  // ---------- Sound engine (8-bit synthesis, no files) ----------
+  var Sound = (function () {
+    var ctx = null;
+    function ac() {
+      if (!ctx) {
+        try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+      }
+      if (ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+      return ctx;
+    }
+    function on() { return !!(state.settings && state.settings.sound); }
+    function tone(freq, dur, type, vol, delay, endFreq) {
+      var c = ac(); if (!c) return;
+      try {
+        var t0 = c.currentTime + (delay || 0);
+        var o = c.createOscillator(), g = c.createGain();
+        o.type = type || 'square';
+        o.frequency.setValueAtTime(freq, t0);
+        if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, t0 + dur);
+        g.gain.setValueAtTime(vol || 0.15, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+        o.connect(g); g.connect(c.destination);
+        o.start(t0); o.stop(t0 + dur + 0.05);
+      } catch (e) {}
+    }
+    function noise(dur, vol, delay, filterFreq, drop) {
+      var c = ac(); if (!c) return;
+      try {
+        var t0 = c.currentTime + (delay || 0);
+        var len = Math.max(1, Math.floor(c.sampleRate * dur));
+        var buf = c.createBuffer(1, len, c.sampleRate);
+        var d = buf.getChannelData(0);
+        for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+        var src = c.createBufferSource(); src.buffer = buf;
+        var f = c.createBiquadFilter(); f.type = 'lowpass';
+        f.frequency.setValueAtTime(filterFreq || 1200, t0);
+        if (drop) f.frequency.exponentialRampToValueAtTime(drop, t0 + dur);
+        var g = c.createGain();
+        g.gain.setValueAtTime(vol || 0.2, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+        src.connect(f); f.connect(g); g.connect(c.destination);
+        src.start(t0);
+      } catch (e) {}
+    }
+    return {
+      unlock: function () { ac(); },
+      click: function () { if (on()) tone(700, 0.05, 'square', 0.07); },
+      correct: function () { if (!on()) return; tone(660, 0.09, 'square', 0.13); tone(990, 0.13, 'square', 0.13, 0.09); },
+      wrong: function () { if (on()) tone(200, 0.3, 'sawtooth', 0.11, 0, 90); },
+      mine: function () { if (!on()) return; noise(0.07, 0.18, 0, 900); tone(160, 0.06, 'triangle', 0.1); },
+      hit: function () { if (!on()) return; noise(0.12, 0.25, 0, 500, 200); tone(95, 0.16, 'triangle', 0.22, 0, 55); },
+      explode: function () { if (!on()) return; noise(0.5, 0.3, 0, 1400, 80); tone(180, 0.45, 'sine', 0.2, 0, 40); },
+      levelup: function () {
+        if (!on()) return;
+        [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.11, 'square', 0.12, i * 0.1); });
+      },
+      craft: function () { if (!on()) return; tone(1200, 0.06, 'triangle', 0.16); tone(1600, 0.1, 'triangle', 0.14, 0.07); noise(0.05, 0.1, 0, 3000); },
+      build: function () {
+        if (!on()) return;
+        [0, 0.12, 0.24].forEach(function (d) { noise(0.07, 0.2, d, 700); tone(140, 0.06, 'triangle', 0.1, d); });
+      },
+      trophy: function () {
+        if (!on()) return;
+        [784, 988, 1175, 1568].forEach(function (f, i) { tone(f, 0.12, 'sine', 0.13, i * 0.09); });
+      },
+      pet: function () {
+        if (!on()) return;
+        [880, 1108, 1318].forEach(function (f, i) { tone(f, 0.1, 'square', 0.11, i * 0.08); });
+      },
+      bossIntro: function () { if (!on()) return; tone(110, 0.5, 'sawtooth', 0.13, 0, 70); noise(0.3, 0.14, 0.1, 300); }
+    };
+  })();
+
+  // Menu click sound via delegation (answers play their own sounds)
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('.mc-btn') : null;
+    if (btn && !btn.classList.contains('answer')) Sound.click();
+  });
+  document.addEventListener('pointerdown', function () { Sound.unlock(); }, { once: true });
+
+  // ---------- Speech ----------
+  function speak(text) {
+    try {
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = 'de-DE';
+      u.rate = 0.85;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  var autoSpeakTimer = null;
+  function autoSpeak(text, delay) {
+    if (!state.settings.autoSpeak) return;
+    clearTimeout(autoSpeakTimer);
+    autoSpeakTimer = setTimeout(function () { speak(text); }, delay || 300);
+  }
+
   // ---------- Screen management ----------
-  var screens = ['screen-start', 'screen-practice', 'screen-home', 'screen-forge', 'screen-worldmap', 'screen-parent'];
+  var screens = ['screen-start', 'screen-practice', 'screen-home', 'screen-forge',
+    'screen-pets', 'screen-trophies', 'screen-worldmap', 'screen-parent'];
   function show(id) {
     screens.forEach(function (s) { $(s).classList.toggle('active', s === id); });
     var block = (id === 'screen-practice')
@@ -567,7 +760,7 @@
   }
   function showOverlay(id, on) { $(id).classList.toggle('active', on); }
 
-  // ---------- Effects: particles, shake, damage popup ----------
+  // ---------- Effects ----------
   function burst(x, y, srcs, count) {
     for (var i = 0; i < count; i++) {
       (function () {
@@ -648,29 +841,78 @@
     });
   }
 
-  // ---------- Speech ----------
-  function speak(text) {
-    try {
-      window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(text);
-      u.lang = 'de-DE';
-      u.rate = 0.85;
-      window.speechSynthesis.speak(u);
-    } catch (e) {}
+  // ---------- Trophies: check + ceremony queue ----------
+  var pendingCeremonies = [];
+
+  function checkTrophies() {
+    TROPHIES.forEach(function (t) {
+      if (!state.trophies[t.id] && t.cond(state)) {
+        state.trophies[t.id] = true;
+        pendingCeremonies.push({ type: 'trophy', trophy: t });
+        if (t.pet && !state.pets[t.pet]) {
+          state.pets[t.pet] = true;
+          if (!state.activePet) state.activePet = t.pet;
+          pendingCeremonies.push({ type: 'pet', pet: petById(t.pet) });
+        }
+      }
+    });
+    saveState();
   }
+
+  var drainNext = null;
+  function drainCeremonies(next) {
+    if (pendingCeremonies.length === 0) { next(); return; }
+    var c = pendingCeremonies.shift();
+    drainNext = next;
+    if (c.type === 'trophy') {
+      var ic = $('trophy-icon');
+      ic.src = c.trophy.icon;
+      ic.classList.remove('pop'); void ic.offsetWidth; ic.classList.add('pop');
+      $('trophy-name').textContent = c.trophy.name;
+      Sound.trophy();
+      autoSpeak('Neue Troph\u00e4e: ' + c.trophy.name + '!', 200);
+      burst(window.innerWidth / 2, window.innerHeight / 2, [c.trophy.icon, ASSETS.items.gold_ingot], 10);
+      showOverlay('overlay-trophy', true);
+    } else {
+      var pi = $('petwin-img');
+      pi.src = c.pet.src;
+      pi.classList.remove('pop'); void pi.offsetWidth; pi.classList.add('pop');
+      $('petwin-name').textContent = c.pet.name;
+      $('petwin-bonus').textContent = c.pet.bonus;
+      Sound.pet();
+      autoSpeak('Neuer Begleiter: ' + c.pet.name + '! ' + c.pet.speakBonus, 200);
+      burst(window.innerWidth / 2, window.innerHeight / 2, [c.pet.src, ASSETS.ui.heart], 12);
+      showOverlay('overlay-pet', true);
+    }
+  }
+
+  $('btn-trophy-next').addEventListener('click', function () {
+    showOverlay('overlay-trophy', false);
+    var n = drainNext;
+    drainCeremonies(n);
+  });
+  $('btn-pet-next').addEventListener('click', function () {
+    showOverlay('overlay-pet', false);
+    var n = drainNext;
+    drainCeremonies(n);
+  });
 
   // ---------- Session ----------
   var session = null;
 
   function startSession() {
+    var pool = unlockedBosses();
     session = {
       tasks: genSession(state.difficulty, state.mistakes),
       index: 0,
       phase: 'tasks',
-      boss: BOSSES[state.stats.sessions % BOSSES.length],
+      boss: pool[state.stats.sessions % pool.length],
       bossHp: 0,
+      bossMax: 0,
       bossDefeated: false,
       halfHearts: totalHearts() * 2,
+      shieldAvailable: petActive('axolotl'),
+      shieldUsed: false,
       earnedRes: {},
       xpGained: 0,
       streak: 0,
@@ -686,12 +928,29 @@
 
   function startBoss() {
     session.phase = 'boss';
-    session.bossHp = bossMaxHp();
-    session.bossMax = session.bossHp;
+    session.bossMax = bossMaxHp(session.boss);
+    session.bossHp = session.bossMax;
     session.tasks = [genBossTask()];
     session.index = 0;
-    renderTask();
+    if (!state.seenBosses[session.boss.id]) {
+      state.seenBosses[session.boss.id] = true;
+      saveState();
+      var bi = $('bossintro-img');
+      bi.src = session.boss.src;
+      bi.classList.remove('pop'); void bi.offsetWidth; bi.classList.add('pop');
+      $('bossintro-name').textContent = session.boss.name;
+      Sound.bossIntro();
+      autoSpeak('Achtung! ' + session.boss.name + ' greift an!', 250);
+      showOverlay('overlay-bossintro', true);
+    } else {
+      renderTask();
+    }
   }
+
+  $('btn-bossintro-next').addEventListener('click', function () {
+    showOverlay('overlay-bossintro', false);
+    renderTask();
+  });
 
   function genBossTask() {
     var diff = state.difficulty;
@@ -704,14 +963,21 @@
   function rollResource(firstTry) {
     if (!firstTry) return pick(['holz', 'stein']);
     var w = DROP_WEIGHTS[state.difficulty] || DROP_WEIGHTS.leicht;
-    var total = 0, k;
-    for (k in w) total += w[k];
-    var r = Math.random() * total;
-    for (k in w) {
-      r -= w[k];
-      if (r <= 0) return k;
+    function roll() {
+      var total = 0, k;
+      for (k in w) total += w[k];
+      var r = Math.random() * total;
+      for (k in w) {
+        r -= w[k];
+        if (r <= 0) return k;
+      }
+      return 'holz';
     }
-    return 'holz';
+    var res = roll();
+    if (petActive('katze') && (res === 'holz' || res === 'stein') && Math.random() < 0.35) {
+      res = roll();
+    }
+    return res;
   }
 
   function earnResource(key, amount) {
@@ -731,6 +997,13 @@
       if (hh >= 2) slot.appendChild(img(ASSETS.ui.heart));
       else if (hh === 1) slot.appendChild(img(ASSETS.ui.heartHalf));
       hearts.appendChild(slot);
+    }
+    var petImg = $('hud-pet');
+    if (state.activePet && state.pets[state.activePet]) {
+      petImg.src = petById(state.activePet).src;
+      petImg.style.display = 'block';
+    } else {
+      petImg.style.display = 'none';
     }
     $('hud-progress').textContent = (session.phase === 'boss')
       ? 'Boss-Kampf!'
@@ -762,7 +1035,7 @@
     var bossArea = $('boss-area');
     if (session.phase === 'boss') {
       bossArea.style.display = 'flex';
-      $('boss-img').src = ASSETS.mobs[session.boss.id];
+      $('boss-img').src = session.boss.src;
       $('boss-name').textContent = session.boss.name;
       $('boss-dmg-label').textContent = 'Dein Schwert: ' + swordDamage() + ' Schaden';
       renderBossHp();
@@ -818,6 +1091,7 @@
     });
 
     renderHUD();
+    autoSpeak(t.speak, 350);
   }
 
   // ---------- Answer handling ----------
@@ -856,7 +1130,7 @@
 
       var resKey = rollResource(session.firstTry);
       earnResource(resKey, 1);
-      saveState();
+      checkTrophies();
 
       var target = $('fly-target-' + resKey) || $('hud-progress');
       flyTo(btn, target, RES[resKey].src);
@@ -865,6 +1139,7 @@
       if (session.phase === 'boss') {
         var dmg = swordDamage();
         session.bossHp = Math.max(0, session.bossHp - dmg);
+        Sound.hit();
         dmgPopup($('boss-img'), '\u2212' + dmg);
         shakeScreen();
         bossHitAnimation();
@@ -882,6 +1157,8 @@
           }
         }, 950);
       } else {
+        Sound.correct();
+        Sound.mine();
         setTimeout(function () { showReward(resKey, xp + bonus, bonusDiamond); }, 550);
       }
     } else {
@@ -889,7 +1166,18 @@
       btn.disabled = true;
       session.firstTry = false;
       session.streak = 0;
-      if (session.halfHearts > 0) session.halfHearts--;
+      Sound.wrong();
+      if (session.shieldAvailable && !session.shieldUsed) {
+        session.shieldUsed = true;
+        var petImg = $('hud-pet');
+        petImg.classList.remove('shield-pulse');
+        void petImg.offsetWidth;
+        petImg.classList.add('shield-pulse');
+        dmgPopup(petImg, 'Schutz!');
+        autoSpeak('Der Axolotl hat dich besch\u00fctzt!', 100);
+      } else if (session.halfHearts > 0) {
+        session.halfHearts--;
+      }
       state.mistakes.push({ type: t.type, task: taskSignature(t), ts: Date.now() });
       if (state.mistakes.length > 200) state.mistakes = state.mistakes.slice(-200);
       saveState();
@@ -902,14 +1190,14 @@
     session.bossDefeated = true;
     state.stats.bossesDefeated++;
     var loot = bossLoot();
-    var xpGain = bossXp();
+    var xpGain = bossXp(session.boss);
     state.xp += xpGain;
     session.xpGained += xpGain;
     for (var k in loot) earnResource(k, loot[k]);
     if (levelOf(state.xp) > levelOf(state.xp - xpGain)) session.pendingLevelUp = levelOf(state.xp);
-    saveState();
+    checkTrophies();
 
-    // Boss explosion
+    Sound.explode();
     var r = $('boss-img').getBoundingClientRect();
     burst(r.left + r.width / 2, r.top + r.height / 2,
       [RES.eisen.src, RES.gold.src, RES.diamant.src, ASSETS.ui.heart], 14);
@@ -930,16 +1218,19 @@
         lootRow.appendChild(li);
         delay += 150;
       }
+      var foxNote = $('bosswin-fox');
+      foxNote.style.display = petActive('fuchs') ? 'flex' : 'none';
       $('bosswin-text').textContent = '+' + xpGain + ' XP';
       renderXpBar();
       refreshAllResBars();
+      autoSpeak(session.boss.name + ' besiegt! Du bekommst eine Schatztruhe!', 300);
       showOverlay('overlay-bosswin', true);
     }, 1000);
   }
 
   $('btn-bosswin-next').addEventListener('click', function () {
     showOverlay('overlay-bosswin', false);
-    maybeLevelUp(showSummary);
+    maybeLevelUp(function () { drainCeremonies(showSummary); });
   });
 
   // ---------- Boss rendering ----------
@@ -974,7 +1265,10 @@
         if (BIOMES[bi].minLevel === lvl) msg += ' Neues Biom freigeschaltet: ' + BIOMES[bi].name + '!';
       }
       $('levelup-text').textContent = msg;
+      Sound.levelup();
+      autoSpeak('Level ' + lvl + '! ' + msg, 200);
       levelUpNext = next;
+      checkTrophies();
       showOverlay('overlay-levelup', true);
     } else {
       next();
@@ -1000,7 +1294,7 @@
 
   $('btn-reward-next').addEventListener('click', function () {
     showOverlay('overlay-reward', false);
-    maybeLevelUp(nextTask);
+    maybeLevelUp(function () { drainCeremonies(nextTask); });
   });
 
   function nextTask() {
@@ -1080,6 +1374,7 @@
         : ((t.correct === 'links' ? 'Links' : 'Rechts') + ' sind ' + Math.max(t.left, t.right) + ', das ist mehr als ' + Math.min(t.left, t.right) + '.');
     }
 
+    autoSpeak(txt.textContent, 400);
     showOverlay('overlay-explain', true);
   }
 
@@ -1094,6 +1389,12 @@
   // ---------- Summary ----------
   function showSummary() {
     state.stats.sessions++;
+
+    if (petActive('schwein')) {
+      earnResource('holz', 2);
+      earnResource('stein', 2);
+    }
+    checkTrophies();
     saveState();
 
     var items = $('summary-items');
@@ -1110,15 +1411,16 @@
     });
     if (!any) items.appendChild(el('div', null, 'Diesmal nichts geschürft — gleich nochmal!'));
 
+    $('summary-pig').style.display = petActive('schwein') ? 'flex' : 'none';
+
     $('summary-title').textContent = session.bossDefeated ? session.boss.name + ' besiegt!' : 'Geschafft!';
     $('summary-stats').textContent = '+' + session.xpGained + ' XP  \u00b7  Level ' + levelOf(state.xp);
 
-    // Hint: what can be crafted/upgraded now?
     var hint = '';
     var ns = nextSwordTier();
     if (ns !== null && canAfford(SWORD_TIERS[ns].cost)) hint = 'In der Schmiede wartet: ' + SWORD_TIERS[ns].name + '!';
     else {
-      var st = HOUSE_STAGES[state.house]; // next stage (index = stage since stages are 1-based)
+      var st = HOUSE_STAGES[state.house];
       if (st && canAfford(st.cost)) hint = 'Dein Zuhause kann ausgebaut werden: ' + st.name + '!';
       else {
         for (var i = 0; i < ARMOR_SLOTS.length; i++) {
@@ -1133,28 +1435,24 @@
       }
     }
     $('summary-hint').textContent = hint;
+    if (hint) autoSpeak(hint, 600);
 
     showOverlay('overlay-summary', true);
   }
 
-  $('btn-summary-again').addEventListener('click', function () {
+  function leaveSummary(action) {
     showOverlay('overlay-summary', false);
-    startSession();
-  });
+    drainCeremonies(action);
+  }
+  $('btn-summary-again').addEventListener('click', function () { leaveSummary(startSession); });
   $('btn-summary-forge').addEventListener('click', function () {
-    showOverlay('overlay-summary', false);
-    renderForge();
-    show('screen-forge');
+    leaveSummary(function () { renderForge(); show('screen-forge'); });
   });
   $('btn-summary-home').addEventListener('click', function () {
-    showOverlay('overlay-summary', false);
-    renderHome();
-    show('screen-home');
+    leaveSummary(function () { renderHome(); show('screen-home'); });
   });
   $('btn-summary-start').addEventListener('click', function () {
-    showOverlay('overlay-summary', false);
-    renderStart();
-    show('screen-start');
+    leaveSummary(function () { renderStart(); show('screen-start'); });
   });
 
   // ---------- Vorlesen ----------
@@ -1201,7 +1499,7 @@
     var maxW = Math.min(560, window.innerWidth * 0.84);
     renderBlueprint($('home-grid'), stage, blueprintCellSize(stage, maxW), animate);
 
-    var next = HOUSE_STAGES[state.house]; // 1-based stage -> index of next
+    var next = HOUSE_STAGES[state.house];
     if (next) {
       $('home-next-panel').style.display = 'flex';
       $('home-max').style.display = 'none';
@@ -1229,8 +1527,9 @@
     if (!next || !canAfford(next.cost)) return;
     payCost(next.cost);
     state.house++;
-    saveState();
+    checkTrophies();
 
+    Sound.build();
     var r = $('home-grid').getBoundingClientRect();
     burst(r.left + r.width / 2, r.top + r.height / 2,
       [ASSETS.blocks.planks, ASSETS.blocks.stone, RES.gold.src], 12);
@@ -1238,6 +1537,7 @@
     renderHome(true);
 
     var stage = HOUSE_STAGES[state.house - 1];
+    autoSpeak('Du hast gebaut: ' + stage.name + '!', stage.total * 35 + 300);
     setTimeout(function () {
       $('upgrade-title').textContent = stage.name + ' gebaut!';
       $('upgrade-text').textContent = stage.effect ? 'Neuer Bonus: ' + stage.effect : 'Dein Zuhause ist gewachsen!';
@@ -1247,7 +1547,7 @@
 
   $('btn-upgrade-next').addEventListener('click', function () {
     showOverlay('overlay-upgrade', false);
-    renderHome();
+    drainCeremonies(renderHome);
   });
 
   $('btn-home-forge').addEventListener('click', function () { renderForge(); show('screen-forge'); });
@@ -1262,7 +1562,6 @@
   function renderForge() {
     renderResBar('res-forge');
 
-    // Character preview
     var ch = $('forge-character');
     clear(ch);
     ch.appendChild(img(ASSETS.mobs.steve, 'forge-avatar'));
@@ -1276,11 +1575,9 @@
     ch.appendChild(equipRow);
     $('forge-stats').textContent = 'Schaden: ' + swordDamage() + '  \u00b7  Herzen: ' + totalHearts();
 
-    // Crafting rows
     var rows = $('forge-rows');
     clear(rows);
 
-    // Sword row
     var ns = nextSwordTier();
     rows.appendChild(forgeRow(
       'Schwert',
@@ -1291,7 +1588,6 @@
       function () { craftSword(); }
     ));
 
-    // Armor rows
     ARMOR_SLOTS.forEach(function (sl) {
       var t = state.equip[sl.id];
       var nt = t + 1;
@@ -1353,7 +1649,7 @@
     if (ns === null || !canAfford(SWORD_TIERS[ns].cost)) return;
     payCost(SWORD_TIERS[ns].cost);
     state.equip.schwert = ns;
-    saveState();
+    checkTrophies();
     craftCelebrate(SWORD_TIERS[ns].src, SWORD_TIERS[ns].name, 'Schaden: ' + swordDamage());
   }
 
@@ -1367,7 +1663,7 @@
     if (!canAfford(cost)) return;
     payCost(cost);
     state.equip[slotId] = nt;
-    saveState();
+    checkTrophies();
     craftCelebrate(armorSrc(nt, sl), ARMOR_TIERS[nt].name + '-' + sl.name, 'Herzen: ' + totalHearts());
   }
 
@@ -1379,7 +1675,8 @@
     item.classList.add('pop');
     $('craft-title').textContent = 'Geschmiedet!';
     $('craft-text').textContent = name + '  \u00b7  ' + effectText;
-    var r = document.body.getBoundingClientRect();
+    Sound.craft();
+    autoSpeak('Geschmiedet: ' + name + '!', 250);
     burst(window.innerWidth / 2, window.innerHeight / 2, [src, RES.eisen.src, RES.gold.src], 12);
     shakeScreen();
     showOverlay('overlay-craft', true);
@@ -1387,11 +1684,91 @@
 
   $('btn-craft-next').addEventListener('click', function () {
     showOverlay('overlay-craft', false);
-    renderForge();
+    drainCeremonies(renderForge);
   });
 
   $('btn-forge-home').addEventListener('click', function () { renderHome(); show('screen-home'); });
   $('btn-forge-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
+
+  // ---------- Begleiter ----------
+  function trophyForPet(petId) {
+    for (var i = 0; i < TROPHIES.length; i++) if (TROPHIES[i].pet === petId) return TROPHIES[i];
+    return null;
+  }
+
+  function renderPets() {
+    var active = state.activePet && state.pets[state.activePet] ? petById(state.activePet) : null;
+    var ad = $('pets-active');
+    clear(ad);
+    if (active) {
+      ad.appendChild(img(active.src, 'pets-active-img'));
+      ad.appendChild(el('div', 'pets-active-name', active.name + ' begleitet dich'));
+      ad.appendChild(el('div', 'pets-active-bonus', active.bonus));
+    } else {
+      ad.appendChild(el('div', 'pets-active-name', 'Noch kein Begleiter dabei'));
+    }
+
+    var grid = $('pets-grid');
+    clear(grid);
+    PETS.forEach(function (p) {
+      var owned = !!state.pets[p.id];
+      var card = el('button', 'pet-card' + (owned ? '' : ' locked') + (petActive(p.id) ? ' selected' : ''));
+      var im = img(p.src, 'pet-face');
+      card.appendChild(im);
+      card.appendChild(el('div', 'pet-name', owned ? p.name : '???'));
+      if (owned) {
+        card.appendChild(el('div', 'pet-bonus', p.bonus));
+      } else {
+        var t = trophyForPet(p.id);
+        var hint = el('div', 'pet-unlock');
+        if (t) {
+          hint.appendChild(img(t.icon));
+          hint.appendChild(el('span', null, t.name));
+        }
+        card.appendChild(hint);
+      }
+      card.addEventListener('click', function () {
+        if (owned) {
+          state.activePet = petActive(p.id) ? null : p.id;
+          saveState();
+          Sound.pet();
+          if (state.activePet) autoSpeak(p.name + ' begleitet dich jetzt. ' + p.speakBonus, 100);
+          renderPets();
+        } else {
+          var t2 = trophyForPet(p.id);
+          if (t2) autoSpeak('Diesen Begleiter bekommst du f\u00fcr: ' + t2.name + '.', 100);
+        }
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  $('btn-pets-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
+
+  // ---------- Trophäen ----------
+  function renderTrophies() {
+    var earned = TROPHIES.filter(function (t) { return state.trophies[t.id]; }).length;
+    $('trophies-count').textContent = earned + ' / ' + TROPHIES.length;
+    var grid = $('trophies-grid');
+    clear(grid);
+    TROPHIES.forEach(function (t) {
+      var has = !!state.trophies[t.id];
+      var card = el('button', 'trophy-card' + (has ? '' : ' locked'));
+      card.appendChild(img(t.icon, 'trophy-img'));
+      card.appendChild(el('div', 'trophy-label', t.name));
+      if (t.pet) {
+        var pb = el('div', 'trophy-pet');
+        pb.appendChild(img(petById(t.pet).src));
+        card.appendChild(pb);
+      }
+      card.addEventListener('click', function () {
+        autoSpeak(has ? ('Troph\u00e4e: ' + t.name + '. Geschafft!') : (t.name + '. Das hast du noch nicht geschafft.'), 100);
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  $('btn-trophies-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
 
   // ---------- Start screen ----------
   function renderStart() {
@@ -1408,6 +1785,9 @@
       var t = state.equip[sl.id];
       if (t >= 0) eq.appendChild(img(armorSrc(t, sl)));
     });
+    if (state.activePet && state.pets[state.activePet]) {
+      eq.appendChild(img(petById(state.activePet).src, 'start-pet'));
+    }
 
     renderGroundStrip();
   }
@@ -1428,6 +1808,8 @@
   $('btn-start-game').addEventListener('click', startSession);
   $('btn-start-home').addEventListener('click', function () { renderHome(); show('screen-home'); });
   $('btn-start-forge').addEventListener('click', function () { renderForge(); show('screen-forge'); });
+  $('btn-start-pets').addEventListener('click', function () { renderPets(); show('screen-pets'); });
+  $('btn-start-trophies').addEventListener('click', function () { renderTrophies(); show('screen-trophies'); });
   $('btn-start-world').addEventListener('click', function () { renderWorldMap(); show('screen-worldmap'); });
   $('btn-start-parent').addEventListener('click', function () { resetGate(); show('screen-parent'); });
 
@@ -1451,9 +1833,13 @@
         tile.appendChild(el('span', 'biome-status', 'Antippen'));
       }
       tile.addEventListener('click', function () {
-        if (!unlocked) return;
+        if (!unlocked) {
+          autoSpeak(b.name + ' kannst du ab Level ' + b.minLevel + ' entdecken.', 100);
+          return;
+        }
         state.biome = b.id;
         saveState();
+        autoSpeak('Du spielst jetzt im Biom: ' + b.name + '.', 100);
         renderWorldMap();
       });
       grid.appendChild(tile);
@@ -1515,7 +1901,9 @@
       'Besiegte Bosse: ' + s.bossesDefeated,
       'Beste Serie: ' + s.bestStreak,
       'XP gesamt: ' + state.xp + '  \u00b7  Level ' + levelOf(state.xp),
-      'Haus-Stufe: ' + state.house + ' von ' + HOUSE_STAGES.length
+      'Haus-Stufe: ' + state.house + ' von ' + HOUSE_STAGES.length,
+      'Troph\u00e4en: ' + TROPHIES.filter(function (t) { return state.trophies[t.id]; }).length + ' von ' + TROPHIES.length,
+      'Begleiter: ' + PETS.filter(function (p) { return state.pets[p.id]; }).length + ' von ' + PETS.length
     ];
     var weakest = null, weakestAcc = 101;
     Object.keys(s.byType).forEach(function (t) {
@@ -1533,6 +1921,7 @@
       : '';
 
     renderDiffButtons();
+    renderToggles();
     $('parent-gate-panel').style.display = 'none';
     $('parent-stats-panel').style.display = 'flex';
   }
@@ -1553,6 +1942,27 @@
     });
   });
 
+  function renderToggles() {
+    $('tog-sound').querySelector('span').textContent = 'Sound: ' + (state.settings.sound ? 'An' : 'Aus');
+    $('tog-sound').classList.toggle('selected', state.settings.sound);
+    $('tog-speak').querySelector('span').textContent = 'Vorlesen: ' + (state.settings.autoSpeak ? 'An' : 'Aus');
+    $('tog-speak').classList.toggle('selected', state.settings.autoSpeak);
+  }
+
+  $('tog-sound').addEventListener('click', function () {
+    state.settings.sound = !state.settings.sound;
+    saveState();
+    renderToggles();
+    if (state.settings.sound) Sound.correct();
+  });
+  $('tog-speak').addEventListener('click', function () {
+    state.settings.autoSpeak = !state.settings.autoSpeak;
+    saveState();
+    renderToggles();
+    if (state.settings.autoSpeak) speak('Vorlesen ist an.');
+    else { try { window.speechSynthesis.cancel(); } catch (e) {} }
+  });
+
   $('btn-parent-reset').addEventListener('click', function () {
     if (window.confirm('Wirklich den gesamten Fortschritt l\u00f6schen?')) {
       state = defaultState();
@@ -1564,6 +1974,8 @@
   $('btn-parent-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
 
   // ---------- Init ----------
+  checkTrophies();
+  pendingCeremonies = [];
   renderStart();
   show('screen-start');
 })();
