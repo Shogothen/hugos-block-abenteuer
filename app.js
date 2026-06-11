@@ -837,6 +837,7 @@
 
   // UI click sound via delegation (answers play their own feedback sounds)
   document.addEventListener('click', function (e) {
+    tryStartIntro();
     if (!e.target.closest) return;
     var btn = e.target.closest('.mc-btn, .biome-tile, .pet-card, .trophy-card');
     if (btn && !btn.classList.contains('answer')) Sound.click();
@@ -913,15 +914,20 @@
   var introAudio = null;
   var introDone = false;
   var introFadeTimer = null;
+  function introInit() {
+    try {
+      introAudio = new Audio(AUDIO_BASE + 'intro.mp3');
+      introAudio.preload = 'auto';
+      introAudio.volume = 0.6;
+      introAudio.onended = function () { introDone = true; introAudio = null; };
+    } catch (e) { introAudio = null; }
+  }
+  setTimeout(introInit, 400);
   function tryStartIntro() {
     if (introDone) return;
     if (!$('screen-start').classList.contains('active')) return;
     try {
-      if (!introAudio) {
-        introAudio = new Audio(AUDIO_BASE + 'intro.mp3');
-        introAudio.volume = 0.6;
-        introAudio.onended = function () { introDone = true; introAudio = null; };
-      }
+      if (!introAudio) introInit();
       var p = introAudio.play();
       if (p && p.then) {
         p.then(function () { introDone = true; })
