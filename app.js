@@ -2226,7 +2226,8 @@
   // ---------- Panorama 2.0 (Block-Terrain) ----------
   var PAN_BLOCKS = {
     cherry: A + 'blocks/cherry_leaves_opaque.png',
-    cherryLog: A + 'blocks/cherry_log_side.png',
+    cherryDark: A + 'blocks/cherry_dark.png',
+    oakDark: A + 'blocks/leaves_oak_dark.png',
     snow: A + 'blocks/snow.png',
     tallgrass: A + 'blocks/tallgrass_green.png',
     water: A + 'blocks/water_still_blue.png'
@@ -2249,7 +2250,7 @@
 
     var w = container.clientWidth || Math.min(window.innerWidth, 760);
     var T = 16;
-    var cols = Math.ceil(w / T) + 1;
+    var cols = Math.ceil(w / T) + 2;
 
     container.appendChild(el('div', 'pan-sky'));
     container.appendChild(img(ASSETS.blocks.glowstone, 'pan-sun'));
@@ -2259,41 +2260,48 @@
       container.appendChild(cloud);
     }
 
-    // Continuous mixed treeline down to the ground: no sky gaps possible
+    // House geometry first (glade depends on it)
+    var stage = HOUSE_STAGES[state.house - 1];
+    var cell = state.house <= 2 ? 12 : (state.house <= 4 ? 10 : 9);
+    var houseW = stage.rows[0].length * cell;
+    var hStart = Math.max(1, Math.floor(cols * 0.2));
+    var hCols = Math.floor(houseW / T) + 2;
+
+    // Treeline down to the ground, glade behind the house, cherry domes
     var backF = el('div', 'pan-layer back');
-    var cherryCenters = [Math.floor(cols * 0.18), Math.floor(cols * 0.62), Math.floor(cols * 0.9)];
-    var cherryWidths = cherryCenters.map(function () { return rnd(2, 4); });
+    var centers = cols < 40 ? [Math.floor(cols * 0.58)] : [Math.floor(cols * 0.52), Math.floor(cols * 0.84)];
     var th = rnd(5, 6);
+    var glA = hStart - 1, glB = hStart + hCols + 1;
     for (var i = 0; i < cols; i++) {
       th += [-1, 0, 0, 0, 1][rnd(0, 4)];
       if (th < 4) th = 4; if (th > 7) th = 7;
-      var isCherry = cherryCenters.some(function (c, k) { return Math.abs(i - c) <= cherryWidths[k]; });
+      var hCol = (i >= glA && i <= glB) ? Math.min(th, 3) : th;
+      var dome = 0;
+      for (var k = 0; k < centers.length; k++) {
+        if (Math.abs(i - centers[k]) <= 2) dome = Math.max(4, 7 - Math.abs(i - centers[k]));
+      }
       var col0 = el('div', 'pan-col');
       col0.style.left = (i * T) + 'px';
-      col0.style.height = (th * T) + 'px';
-      col0.style.backgroundImage = "url('" + (isCherry ? PAN_BLOCKS.cherry : ASSETS.blocks.leavesOak) + "')";
+      col0.style.height = ((dome || hCol) * T) + 'px';
+      col0.style.backgroundImage = "url('" + (dome ? PAN_BLOCKS.cherryDark : PAN_BLOCKS.oakDark) + "')";
       backF.appendChild(col0);
     }
     container.appendChild(backF);
 
-    // Midground: real stepped block terrain (grass cap + dirt fill)
+    // Terrain
     var hts = [];
     var h = rnd(1, 2);
     for (var c2i = 0; c2i < cols; c2i++) {
-      h += [-1, 0, 0, 0, 0, 1][rnd(0, 5)]; if (h < 1) h = 1; if (h > 3) h = 3;
+      h += [-1, 0, 0, 1][rnd(0, 3)]; if (h < 1) h = 1; if (h > 3) h = 3;
       hts.push(h);
     }
-    // Flat plateau for the house
-    var stage = HOUSE_STAGES[state.house - 1];
-    var houseW = stage.rows[0].length * 9;
-    var hStart = Math.max(1, Math.floor(cols * 0.22));
-    var hCols = Math.ceil(houseW / T) + 1;
-    var plateau = hts[hStart] || 1;
+    var plateau = Math.max(2, hts[hStart]);
     for (var pi = hStart - 1; pi <= hStart + hCols && pi < cols; pi++) hts[pi] = plateau;
-    // Cliff with waterfall on the right
     var cliffStart = cols - 4;
     for (var ki = cliffStart; ki < cols; ki++) hts[ki] = 5;
-    if (hts[cliffStart - 1] > 3) hts[cliffStart - 1] = 3;
+    hts[cliffStart - 1] = 1;
+    hts[cliffStart - 2] = 1;
+    if (cliffStart - 3 >= 0) hts[cliffStart - 3] = Math.min(hts[cliffStart - 3], 2);
 
     var terrain = el('div', 'pan-terrain');
     for (var ti = 0; ti < cols; ti++) {
@@ -2301,41 +2309,42 @@
       tc.style.left = (ti * T) + 'px';
       tc.style.height = (hts[ti] * T) + 'px';
       tc.style.backgroundImage = "url('" + ASSETS.blocks.dirt + "')";
-      var cap = img(ASSETS.blocks.grass, 'pan-cap');
-      tc.appendChild(cap);
+      if (ti === cliffStart - 1 || ti === cliffStart - 2) {
+        tc.appendChild(el('div', 'pan-watercap'));
+      } else {
+        tc.appendChild(img(ASSETS.blocks.grass, 'pan-cap'));
+      }
       terrain.appendChild(tc);
     }
     container.appendChild(terrain);
 
-    // Waterfall fixed to the cliff's left face, pool sunk into the ground
+    // Waterfall down the cliff face into the pool dip
     var fall = el('div', 'pan-waterfall');
-    fall.style.left = (cliffStart * T - 11) + 'px';
-    fall.style.height = (4 * T) + 'px';
-    fall.style.bottom = T + 'px';
+    fall.style.left = (cliffStart * T - 12) + 'px';
+    fall.style.height = (4 * T + 4) + 'px';
+    fall.style.bottom = (T - 4) + 'px';
     container.appendChild(fall);
-    var pool = el('div', 'pan-pool');
-    pool.style.left = (cliffStart * T - 26) + 'px';
-    container.appendChild(pool);
 
-    // Grass tufts on column tops
+    // Grass tufts (not in the pool)
     for (var gi = 0; gi < 6; gi++) {
       var gx = rnd(0, cols - 1);
+      if (gx === cliffStart - 1 || gx === cliffStart - 2) continue;
       var g = img(PAN_BLOCKS.tallgrass, 'pan-grass');
       g.style.left = (gx * T + 1) + 'px';
       g.style.bottom = (hts[gx] * T) + 'px';
       container.appendChild(g);
     }
 
-    // The real house on its plateau
+    // The real house on its glade plateau
     var house = el('div', 'pan-house build-grid');
-    renderBlueprint(house, stage, 9, false);
+    renderBlueprint(house, stage, cell, false);
     house.style.left = (hStart * T) + 'px';
     house.style.bottom = (plateau * T) + 'px';
     container.appendChild(house);
 
     if (state.activePet && state.pets[state.activePet]) {
       var pp = img(petById(state.activePet).src, 'pan-pet');
-      pp.style.left = (hStart * T - 26) + 'px';
+      pp.style.left = (hStart * T - 28) + 'px';
       pp.style.bottom = (plateau * T + 2) + 'px';
       container.appendChild(pp);
     }

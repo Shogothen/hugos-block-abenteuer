@@ -792,10 +792,8 @@ body.shake { animation: screen-shake 0.35s ease; }
 .pan-col { position: absolute; bottom: 0; width: 16px; background-size: 16px 16px; background-repeat: repeat; }
 .pan-layer.back {
   bottom: 0;
-  filter: brightness(0.62) saturate(0.75);
   animation: layer-drift 46s ease-in-out infinite alternate;
 }
-.pan-evening .pan-layer.back { filter: brightness(0.55) saturate(0.6) hue-rotate(15deg); }
 @keyframes layer-drift {
   0% { transform: translateX(-7px); }
   100% { transform: translateX(7px); }
@@ -823,16 +821,13 @@ body.shake { animation: screen-shake 0.35s ease; }
   0% { background-position-y: 0; }
   100% { background-position-y: 512px; }
 }
-.pan-pool {
+.pan-watercap {
   position: absolute;
-  bottom: 9px;
-  width: 34px; height: 11px;
+  top: 0; left: 0;
+  width: 16px; height: 16px;
   background-image: url('assets/minecraft/blocks/water_still_blue.png');
   background-size: 16px 512px;
   animation: water-run 3.2s steps(32) infinite;
-  opacity: 0.95;
-  z-index: 2;
-  box-shadow: 0 2px 0 rgba(0,0,0,0.25);
 }
 
 .pan-grass { position: absolute; width: 14px; height: 14px; z-index: 2; }
