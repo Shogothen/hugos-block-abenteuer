@@ -9,7 +9,7 @@
 <title>Hugos Block-Abenteuer</title>
 <link rel="icon" type="image/png" href="icon-180.png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 
@@ -72,6 +72,7 @@
       <div id="hud-hearts" class="hud-hearts"></div>
       <img id="hud-pet" class="hud-pet" src="" alt="" style="display:none">
       <div id="hud-progress" class="hud-progress"></div>
+      <button id="btn-quit" class="mc-btn quit-btn"><span>✕</span></button>
     </div>
     <div class="hud-row">
       <div class="xp-wrap">
@@ -117,13 +118,20 @@
   <div class="mc-panel">
     <h2 class="subtitle">Mein Zuhause</h2>
     <div id="res-home" class="res-bar"></div>
-    <div id="home-title" class="home-title"></div>
+    <div class="home-title-row">
+      <div id="home-title" class="home-title"></div>
+      <img id="home-pet" class="home-pet" src="" alt="" style="display:none">
+    </div>
     <div id="home-effect" class="home-effect"></div>
+    <div id="home-build-hint" class="home-build-hint" style="display:none">
+      <span class="build-cta">Tippe zum Bauen!</span>
+      <span id="home-build-progress" class="build-progress"></span>
+    </div>
     <div id="home-grid" class="build-grid"></div>
     <div id="home-next-panel" class="home-next">
       <div id="home-next-name" class="home-next-name"></div>
       <div id="home-next-cost" class="cost-row"></div>
-      <button id="btn-home-upgrade" class="mc-btn"><span>Ausbauen!</span></button>
+      <button id="btn-home-upgrade" class="mc-btn"><span>Bauplan kaufen!</span></button>
     </div>
     <div id="home-max" class="home-max" style="display:none">Deine Festung ist fertig — größer geht es nicht!</div>
     <div class="btn-row">
@@ -234,8 +242,9 @@
 
 <div id="overlay-explain" class="overlay">
   <div class="mc-panel overlay-panel">
-    <h2 class="subtitle">Schau mal:</h2>
+    <h2 class="subtitle">Kleiner Tipp!</h2>
     <div id="explain-visual" class="explain-visual"></div>
+    <div id="explain-tap-hint" class="explain-tap-hint" style="display:none">Antippen = Zählen</div>
     <div id="explain-text" class="explain-text"></div>
     <button id="btn-explain-retry" class="mc-btn"><span>Nochmal versuchen</span></button>
   </div>
@@ -329,6 +338,25 @@
   </div>
 </div>
 
-<script src="app.js?v=10"></script>
+<div id="overlay-quit" class="overlay">
+  <div class="mc-panel overlay-panel">
+    <h2 class="subtitle">Schon fertig?</h2>
+    <div class="overlay-text">Deine Sachen bleiben gespeichert.</div>
+    <button id="btn-quit-no" class="mc-btn play"><span>Weiterspielen!</span></button>
+    <button id="btn-quit-yes" class="mc-btn small"><span>Zum Start</span></button>
+  </div>
+</div>
+
+<div id="overlay-ko" class="overlay">
+  <div class="mc-panel overlay-panel danger-panel">
+    <h2 class="subtitle">Deine Herzen sind leer!</h2>
+    <img class="overlay-item" src="assets/minecraft/ui/heart_background.png" alt="">
+    <div class="overlay-text">Ruh dich kurz aus — gleich klappt es bestimmt!</div>
+    <button id="btn-ko-retry" class="mc-btn play"><span>Nochmal!</span></button>
+    <button id="btn-ko-home" class="mc-btn small"><span>Zum Start</span></button>
+  </div>
+</div>
+
+<script src="app.js?v=11"></script>
 </body>
 </html>

@@ -308,6 +308,7 @@
       res: { holz: 0, stein: 0, eisen: 0, gold: 0, diamant: 0 },
       equip: { schwert: -1, helm: -1, brust: -1, hose: -1, stiefel: -1 },
       house: 1,
+      building: null,
       pets: {},
       activePet: null,
       trophies: {},
@@ -337,6 +338,8 @@
       if (!s.difficulty) s.difficulty = 'leicht';
       if (!s.house || s.house < 1) s.house = 1;
       if (!s.playerName) s.playerName = 'Hugo';
+      if (old.building && old.building.stage > s.house && old.building.stage <= HOUSE_STAGES.length) s.building = old.building;
+      else if (!old.building) s.building = null;
 
       if (!old.v || old.v < 6) {
         var c = s.stats.correct || 0;
@@ -797,6 +800,16 @@
         tone(55, 0.5, 'sine', 0.3, 0.05);
       },
       whee: function () { if (on()) tone(280, 0.4, 'square', 0.22, 0, 1100); },
+      sad: function () {
+        if (!on()) return;
+        tone(392, 0.25, 'triangle', 0.24);
+        tone(311, 0.4, 'triangle', 0.24, 0.25);
+      },
+      place: function () {
+        if (!on()) return;
+        noise(0.07, 0.38, 0, 850, 280);
+        tone(135, 0.06, 'triangle', 0.22);
+      },
       grr: function () {
         if (!on()) return;
         tone(130, 0.3, 'sawtooth', 0.28, 0, 70);
@@ -1030,6 +1043,7 @@
       pendingLevelUp: null,
       firstTry: true,
       greet: true,
+      ended: false,
       locked: false
     };
     show('screen-practice');
@@ -1061,8 +1075,9 @@
     }
   }
 
-  function flashRed() {
+  function flashRed(opacity) {
     var f = el('div', 'flash-red');
+    if (opacity) f.style.setProperty('--flash-o', opacity);
     document.body.appendChild(f);
     setTimeout(function () { if (f.parentNode) f.parentNode.removeChild(f); }, 650);
   }
@@ -1251,7 +1266,7 @@
       }
 
       var levelBefore = levelOf(state.xp);
-      var xp = session.firstTry ? 10 : 5;
+      var xp = session.firstTry ? 10 : 3;
       var bonusDiamond = false;
       var bonus = 0;
       if (session.firstTry && session.streak > 0 && session.streak % STREAK_BONUS_EVERY === 0) {
@@ -1263,13 +1278,15 @@
       session.xpGained += xp + bonus;
       if (levelOf(state.xp) > levelBefore) session.pendingLevelUp = levelOf(state.xp);
 
-      var resKey = rollResource(session.firstTry);
-      earnResource(resKey, 1);
+      var resKey = null;
+      if (session.firstTry) {
+        resKey = rollResource(true);
+        earnResource(resKey, 1);
+        var target = $('fly-target-' + resKey) || $('hud-progress');
+        flyTo(btn, target, RES[resKey].src);
+        setTimeout(refreshAllResBars, 650);
+      }
       checkTrophies();
-
-      var target = $('fly-target-' + resKey) || $('hud-progress');
-      flyTo(btn, target, RES[resKey].src);
-      setTimeout(refreshAllResBars, 650);
 
       if (session.phase === 'boss') {
         var dmg = swordDamage();
@@ -1290,6 +1307,7 @@
         var r = $('boss-img').getBoundingClientRect();
         burst(r.left + r.width / 2, r.top + r.height / 2, [RES.eisen.src, RES.gold.src], 6);
         setTimeout(function () {
+          if (!session || session.ended) return;
           if (session.bossHp <= 0) {
             bossDefeated();
           } else {
@@ -1309,6 +1327,7 @@
           if (session.streak === 3) autoSpeak(praiseLine(), 150);
           showInlineReward(resKey, xp + bonus);
           setTimeout(function () {
+            if (!session || session.ended) return;
             maybeLevelUp(function () { drainCeremonies(nextTask); });
           }, 1350);
         }
@@ -1319,24 +1338,75 @@
       session.firstTry = false;
       session.streak = 0;
       Sound.wrong();
+      var shielded = false;
       if (session.shieldAvailable && !session.shieldUsed) {
         session.shieldUsed = true;
+        shielded = true;
         var petImg = $('hud-pet');
         petImg.classList.remove('shield-pulse');
         void petImg.offsetWidth;
         petImg.classList.add('shield-pulse');
         dmgPopup(petImg, 'Schutz!');
         autoSpeak('Der Axolotl hat dich besch\u00fctzt!', 100);
-      } else if (session.halfHearts > 0) {
-        session.halfHearts--;
+      } else {
+        session.halfHearts = Math.max(0, session.halfHearts - 2);
+        dmgPopup($('hud-hearts'), '\u22121');
+        if (session.phase === 'boss') {
+          var b = $('boss-img');
+          b.classList.remove('attack');
+          void b.offsetWidth;
+          b.classList.add('attack');
+          flashRed(0.3);
+          shakeScreen();
+        }
       }
       state.mistakes.push({ type: t.type, task: taskSignature(t), ts: Date.now() });
       if (state.mistakes.length > 200) state.mistakes = state.mistakes.slice(-200);
       saveState();
       renderHUD();
-      setTimeout(function () { showExplanation(t); }, 600);
+      if (!shielded && session.halfHearts <= 0) {
+        setTimeout(gameOver, 700);
+      } else {
+        setTimeout(function () { showExplanation(t); }, 600);
+      }
     }
   }
+
+  // ---------- Game Over ----------
+  function gameOver() {
+    if (!session || session.ended) return;
+    session.ended = true;
+    Sound.sad();
+    autoSpeak('Oh nein, deine Herzen sind leer! Ruh dich kurz aus \u2014 gleich klappt es bestimmt!', 300);
+    showOverlay('overlay-ko', true);
+  }
+
+  $('btn-ko-retry').addEventListener('click', function () {
+    showOverlay('overlay-ko', false);
+    startSession();
+  });
+  $('btn-ko-home').addEventListener('click', function () {
+    showOverlay('overlay-ko', false);
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    renderStart();
+    show('screen-start');
+  });
+
+  // ---------- Quit (back to menu) ----------
+  $('btn-quit').addEventListener('click', function () {
+    autoSpeak('Willst du schon aufh\u00f6ren?', 150);
+    showOverlay('overlay-quit', true);
+  });
+  $('btn-quit-no').addEventListener('click', function () {
+    showOverlay('overlay-quit', false);
+  });
+  $('btn-quit-yes').addEventListener('click', function () {
+    showOverlay('overlay-quit', false);
+    if (session) session.ended = true;
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    renderStart();
+    show('screen-start');
+  });
 
   function bossDefeated() {
     session.bossDefeated = true;
@@ -1435,8 +1505,12 @@
   function showInlineReward(resKey, xp) {
     var b = $('reward-banner');
     clear(b);
-    b.appendChild(img(RES[resKey].src));
-    b.appendChild(el('span', null, '+1 ' + RES[resKey].name + '  \u00b7  +' + xp + ' XP'));
+    if (resKey) {
+      b.appendChild(img(RES[resKey].src));
+      b.appendChild(el('span', null, '+1 ' + RES[resKey].name + '  \u00b7  +' + xp + ' XP'));
+    } else {
+      b.appendChild(el('span', null, '+' + xp + ' XP'));
+    }
     b.classList.remove('show');
     void b.offsetWidth;
     b.classList.add('show');
@@ -1470,76 +1544,158 @@
     }
   }
 
-  // ---------- Explanation ----------
+  // ---------- Hilfestellung (Tipps ohne Loesung) ----------
+  function makeCountable(groupEl, counterRef) {
+    var imgs = groupEl.querySelectorAll('img');
+    for (var i = 0; i < imgs.length; i++) {
+      (function (im) {
+        if (im.classList.contains('faded')) return;
+        var wrap = el('span', 'count-wrap');
+        im.parentNode.insertBefore(wrap, im);
+        wrap.appendChild(im);
+        wrap.addEventListener('click', function () {
+          if (wrap.querySelector('.count-badge')) return;
+          counterRef.n++;
+          var badge = el('div', 'count-badge', String(counterRef.n));
+          wrap.appendChild(badge);
+          Sound.click();
+        });
+      })(imgs[i]);
+    }
+  }
+
+  function makeGapCountable(groupEl, counterRef) {
+    var imgs = groupEl.querySelectorAll('img.gap');
+    for (var i = 0; i < imgs.length; i++) {
+      (function (im) {
+        var wrap = el('span', 'count-wrap');
+        im.parentNode.insertBefore(wrap, im);
+        wrap.appendChild(im);
+        wrap.addEventListener('click', function () {
+          if (wrap.querySelector('.count-badge')) return;
+          counterRef.n++;
+          wrap.appendChild(el('div', 'count-badge', String(counterRef.n)));
+          Sound.click();
+        });
+      })(imgs[i]);
+    }
+  }
+
+  function hintTens(b) { return Math.floor(b / 10) * 10; }
+
   function showExplanation(t) {
     var vis = $('explain-visual');
     var txt = $('explain-text');
+    var tap = $('explain-tap-hint');
     clear(vis);
+    tap.style.display = 'none';
+    var counter = { n: 0 };
 
     if (t.type === 'count') {
-      var grid = el('div', 'count-grid');
-      for (var i = 0; i < t.n; i++) {
-        var cell = el('div', 'count-cell');
-        cell.appendChild(img(COUNT_ITEM_SRC[t.item]));
-        cell.appendChild(el('div', null, String(i + 1)));
-        grid.appendChild(cell);
-      }
-      vis.appendChild(grid);
-      txt.textContent = 'Z\u00e4hle langsam mit: Es sind ' + t.n + ' ' + COUNT_ITEM_NAMES[t.item][t.n === 1 ? 0 : 1] + '.';
+      var g = el('div', 'group');
+      renderItemRow(g, t.item, t.n);
+      vis.appendChild(g);
+      makeCountable(g, counter);
+      tap.style.display = 'block';
+      txt.textContent = 'Z\u00e4hle ganz langsam \u2014 tippe jeden an, dann verz\u00e4hlst du dich nicht!';
     } else if (t.type === 'add' || t.type === 'double') {
       if (t.a <= 10 && t.b <= 10) {
         var gA = el('div', 'group'); renderItemRow(gA, t.item, t.a);
-        gA.appendChild(el('div', 'num-label', String(t.a)));
         var gB = el('div', 'group'); renderItemRow(gB, t.item, t.b);
-        gB.appendChild(el('div', 'num-label', String(t.b)));
         vis.appendChild(gA);
         vis.appendChild(el('div', 'op', '+'));
         vis.appendChild(gB);
-        txt.textContent = t.a + ' und noch ' + t.b + ' dazu — zusammen sind das ' + (t.a + t.b) + '.';
+        makeCountable(gA, counter);
+        makeCountable(gB, counter);
+        tap.style.display = 'block';
+        txt.textContent = (t.type === 'double')
+          ? 'Beide Gruppen sind gleich gro\u00df. Z\u00e4hle links los und rechts einfach weiter!'
+          : 'Z\u00e4hle erst links alle \u2014 und z\u00e4hle dann rechts einfach weiter!';
       } else {
-        var tens = Math.floor(t.b / 10) * 10;
+        var tens = hintTens(t.b);
         var ones = t.b - tens;
-        txt.textContent = (tens > 0 && ones > 0)
-          ? 'Rechne in Schritten: ' + t.a + ' + ' + tens + ' = ' + (t.a + tens) + ', dann + ' + ones + ' = ' + (t.a + t.b) + '.'
-          : t.a + ' + ' + t.b + ' = ' + (t.a + t.b) + '.';
+        if (tens > 0 && ones > 0) {
+          txt.textContent = 'Tipp: Rechne in Schritten! Erst ' + t.a + ' plus ' + tens + ', und dann noch plus ' + ones + '.';
+        } else if (tens > 0) {
+          txt.textContent = 'Tipp: Gehe in Zehner-Schritten! Immer 10 dazu, ' + (tens / 10) + ' mal.';
+        } else {
+          txt.textContent = 'Tipp: Z\u00e4hle von ' + t.a + ' aus weiter \u2014 ' + t.b + ' Schritte.';
+        }
       }
     } else if (t.type === 'sub') {
       if (t.a <= 12) {
-        var g = el('div', 'group');
-        renderItemRow(g, t.item, t.a, t.a - t.b);
-        g.appendChild(el('div', 'num-label', t.a + ' \u2212 ' + t.b + ' = ' + (t.a - t.b)));
-        vis.appendChild(g);
-        txt.textContent = 'Von ' + t.a + ' nimmst du ' + t.b + ' weg — es bleiben ' + (t.a - t.b) + '.';
+        var gs = el('div', 'group');
+        renderItemRow(gs, t.item, t.a, t.a - t.b);
+        vis.appendChild(gs);
+        makeCountable(gs, counter);
+        tap.style.display = 'block';
+        txt.textContent = 'Die blassen sind weg. Tippe und z\u00e4hle, was \u00fcbrig bleibt!';
       } else {
-        var tens2 = Math.floor(t.b / 10) * 10;
+        var tens2 = hintTens(t.b);
         var ones2 = t.b - tens2;
-        txt.textContent = (tens2 > 0 && ones2 > 0)
-          ? 'Rechne in Schritten: ' + t.a + ' \u2212 ' + tens2 + ' = ' + (t.a - tens2) + ', dann \u2212 ' + ones2 + ' = ' + (t.a - t.b) + '.'
-          : t.a + ' \u2212 ' + t.b + ' = ' + (t.a - t.b) + '.';
+        if (tens2 > 0 && ones2 > 0) {
+          txt.textContent = 'Tipp: Rechne in Schritten! Erst ' + t.a + ' minus ' + tens2 + ', und dann noch minus ' + ones2 + '.';
+        } else if (tens2 > 0) {
+          txt.textContent = 'Tipp: Gehe ' + (tens2 / 10) + ' Zehner-Schritte zur\u00fcck!';
+        } else {
+          txt.textContent = 'Tipp: Z\u00e4hle von ' + t.a + ' aus r\u00fcckw\u00e4rts \u2014 ' + t.b + ' Schritte.';
+        }
       }
     } else if (t.type === 'missing') {
-      txt.textContent = 'Von ' + t.a + ' bis ' + t.c + ' fehlen ' + (t.c - t.a) + '. Also: ' + t.a + ' + ' + (t.c - t.a) + ' = ' + t.c + '.';
+      if (t.c <= 20) {
+        var gm = el('div', 'group');
+        for (var i = 0; i < t.c; i++) {
+          var im = img(COUNT_ITEM_SRC[pickMissingItem(t)]);
+          if (i >= t.a) im.classList.add('gap');
+          else im.classList.add('solid-dim');
+          gm.appendChild(im);
+        }
+        vis.appendChild(gm);
+        makeGapCountable(gm, counter);
+        tap.style.display = 'block';
+        txt.textContent = 'Du hast schon ' + t.a + '. Tippe die hellen an und z\u00e4hle, wie viele noch fehlen!';
+      } else {
+        txt.textContent = 'Tipp: Z\u00e4hle von ' + t.a + ' weiter, bis du bei ' + t.c + ' bist. Zehner-Schritte helfen!';
+      }
     } else if (t.type === 'mul') {
-      txt.textContent = t.f + ' \u00d7 ' + t.n + ' bedeutet ' + t.n + ' mal die ' + t.f + ': das ergibt ' + (t.f * t.n) + '.';
+      if (t.f * t.n <= 30) {
+        for (var gi = 0; gi < t.n; gi++) {
+          var gg = el('div', 'group boxed');
+          renderItemRow(gg, 'apfel', t.f);
+          vis.appendChild(gg);
+          makeCountable(gg, counter);
+        }
+        tap.style.display = 'block';
+        txt.textContent = 'Das sind ' + t.n + ' Gruppen mit je ' + t.f + '. Tippe alle an und z\u00e4hle durch!';
+      } else {
+        var steps = [];
+        var showN = Math.min(3, t.n - 1);
+        for (var si = 1; si <= showN; si++) steps.push(t.f * si);
+        txt.textContent = 'Tipp: Nutze die ' + t.f + 'er-Reihe! ' + steps.join(', ') + ' \u2026 spring weiter, bis du ' + t.n + ' mal gesprungen bist!';
+      }
     } else if (t.type === 'half') {
-      txt.textContent = t.n + ' in zwei gleiche Teile: ' + (t.n / 2) + ' und ' + (t.n / 2) + '. Die H\u00e4lfte ist ' + (t.n / 2) + '.';
+      txt.textContent = 'Tipp: Teile ' + t.n + ' in zwei gleich gro\u00dfe Haufen. Welche Zahl plus sich selbst ergibt ' + t.n + '?';
     } else if (t.type === 'compare') {
       [['Links', t.left], ['Rechts', t.right]].forEach(function (s) {
         var side = el('div', 'compare-side');
         side.appendChild(el('div', 'side-name', s[0]));
-        var gg = el('div', 'group');
-        renderItemRow(gg, t.item, s[1]);
-        side.appendChild(gg);
-        side.appendChild(el('div', 'num-label', String(s[1])));
+        var sg = el('div', 'group');
+        renderItemRow(sg, t.item, s[1]);
+        side.appendChild(sg);
         vis.appendChild(side);
+        makeCountable(sg, { n: 0 });
       });
-      txt.textContent = (t.correct === 'gleich')
-        ? 'Beide Seiten haben ' + t.left + ' — gleich viele!'
-        : ((t.correct === 'links' ? 'Links' : 'Rechts') + ' sind ' + Math.max(t.left, t.right) + ', das ist mehr als ' + Math.min(t.left, t.right) + '.');
+      tap.style.display = 'block';
+      txt.textContent = 'Z\u00e4hle erst links, dann rechts \u2014 tippe zum Z\u00e4hlen!';
     }
 
     autoSpeak(txt.textContent, 400);
     showOverlay('overlay-explain', true);
+  }
+
+  function pickMissingItem(t) {
+    if (!t._hintItem) t._hintItem = pick(COUNT_ITEMS);
+    return t._hintItem;
   }
 
   $('btn-explain-retry').addEventListener('click', function () {
@@ -1622,13 +1778,14 @@
   // ---------- Vorlesen ----------
   $('btn-speak').addEventListener('click', function () { speak(currentTask().speak); });
 
-  // ---------- Blueprint rendering ----------
-  function renderBlueprint(container, stage, cellSize, animate) {
+  // ---------- Blueprint rendering (mit Geister-Bloecken) ----------
+  function renderBlueprint(container, stage, cellSize, animate, placedCount) {
     clear(container);
     var cols = stage.rows[0].length;
     container.style.gridTemplateColumns = 'repeat(' + cols + ', ' + cellSize + 'px)';
     var idxMap = {};
     stage.order.forEach(function (o, i) { idxMap[o.r + ':' + o.c] = i; });
+    var ghostMode = (placedCount !== undefined);
     for (var r = 0; r < stage.rows.length; r++) {
       for (var c = 0; c < stage.rows[r].length; c++) {
         var ch = stage.rows[r][c];
@@ -1638,12 +1795,21 @@
         if (ch === '.') {
           cell.classList.add('air');
         } else {
-          var im = img(ASSETS.blocks[stage.map[ch]]);
-          if (animate) {
-            im.classList.add('placed-pop');
-            im.style.animationDelay = (idxMap[r + ':' + c] * 35) + 'ms';
+          var idx = idxMap[r + ':' + c];
+          if (ghostMode && idx >= placedCount) {
+            cell.classList.add('ghost');
+            if (idx === placedCount) cell.classList.add('next');
+          } else {
+            var im = img(ASSETS.blocks[stage.map[ch]]);
+            if (animate === true) {
+              im.classList.add('placed-pop');
+              im.style.animationDelay = (idx * 35) + 'ms';
+            } else if (ghostMode && animate && idx >= animate.from) {
+              im.classList.add('placed-pop');
+              im.style.animationDelay = ((idx - animate.from) * 60) + 'ms';
+            }
+            cell.appendChild(im);
           }
-          cell.appendChild(im);
         }
         container.appendChild(cell);
       }
@@ -1655,13 +1821,43 @@
   }
 
   // ---------- Mein Zuhause ----------
+  function homeGridStage() {
+    return state.building ? HOUSE_STAGES[state.building.stage - 1] : HOUSE_STAGES[state.house - 1];
+  }
+
+  function renderHomeGrid(animateFrom) {
+    var stage = homeGridStage();
+    var maxW = Math.min(560, window.innerWidth * 0.84);
+    var anim = (animateFrom !== undefined) ? { from: animateFrom } : false;
+    renderBlueprint($('home-grid'), stage, blueprintCellSize(stage, maxW), anim,
+      state.building ? state.building.placed : undefined);
+  }
+
   function renderHome(animate) {
     renderResBar('res-home');
+    var pet = (state.activePet && state.pets[state.activePet]) ? petById(state.activePet) : null;
+    var hp = $('home-pet');
+    if (pet) { hp.src = pet.src; hp.style.display = 'inline-block'; }
+    else hp.style.display = 'none';
+
+    if (state.building) {
+      var target = HOUSE_STAGES[state.building.stage - 1];
+      $('home-title').textContent = 'Baustelle: ' + target.name;
+      $('home-effect').textContent = '';
+      $('home-build-hint').style.display = 'flex';
+      $('home-build-progress').textContent = state.building.placed + ' / ' + target.total + ' Bl\u00f6cke';
+      $('home-next-panel').style.display = 'none';
+      $('home-max').style.display = 'none';
+      renderHomeGrid();
+      return;
+    }
+
     var stage = HOUSE_STAGES[state.house - 1];
     $('home-title').textContent = 'Stufe ' + state.house + ': ' + stage.name;
     $('home-effect').textContent = stage.effect ? 'Bonus: ' + stage.effect : '';
+    $('home-build-hint').style.display = 'none';
     var maxW = Math.min(560, window.innerWidth * 0.84);
-    renderBlueprint($('home-grid'), stage, blueprintCellSize(stage, maxW), animate);
+    renderBlueprint($('home-grid'), stage, blueprintCellSize(stage, maxW), animate === true);
 
     var next = HOUSE_STAGES[state.house];
     if (next) {
@@ -1687,26 +1883,75 @@
   }
 
   $('btn-home-upgrade').addEventListener('click', function () {
+    if (state.building) return;
     var next = HOUSE_STAGES[state.house];
     if (!next || !canAfford(next.cost)) return;
     payCost(next.cost);
-    state.house++;
-    checkTrophies();
+    state.building = { stage: state.house + 1, placed: 0 };
+    saveState();
+    Sound.craft();
+    autoSpeak('Bauplan gekauft! Tippe auf die Baustelle und bau dein Haus \u2014 Block f\u00fcr Block!', 250);
+    renderHome();
+  });
 
-    Sound.build();
-    var r = $('home-grid').getBoundingClientRect();
-    burst(r.left + r.width / 2, r.top + r.height / 2,
-      [ASSETS.blocks.planks, ASSETS.blocks.stone, RES.gold.src], 12);
-    shakeScreen();
-    renderHome(true);
+  function rowsComplete(stage, placed) {
+    var perRow = {};
+    stage.order.forEach(function (o, i) {
+      perRow[o.r] = perRow[o.r] || { total: 0, placed: 0 };
+      perRow[o.r].total++;
+      if (i < placed) perRow[o.r].placed++;
+    });
+    var done = 0;
+    for (var r in perRow) if (perRow[r].placed === perRow[r].total) done++;
+    return done;
+  }
 
-    var stage = HOUSE_STAGES[state.house - 1];
-    autoSpeak('Du hast gebaut: ' + stage.name + '!', stage.total * 35 + 300);
-    setTimeout(function () {
-      $('upgrade-title').textContent = stage.name + ' gebaut!';
-      $('upgrade-text').textContent = stage.effect ? 'Neuer Bonus: ' + stage.effect : 'Dein Zuhause ist gewachsen!';
-      showOverlay('overlay-upgrade', true);
-    }, stage.total * 35 + 500);
+  $('home-grid').addEventListener('click', function () {
+    var b = state.building;
+    if (!b) return;
+    var stage = HOUSE_STAGES[b.stage - 1];
+    var per = Math.max(1, Math.ceil(stage.total / 16));
+    var before = b.placed;
+    b.placed = Math.min(stage.total, b.placed + per);
+    saveState();
+    Sound.place();
+
+    var grid = $('home-grid');
+    var r = grid.getBoundingClientRect();
+    burst(r.left + r.width / 2, r.top + r.height * 0.55,
+      [ASSETS.blocks[stage.map[Object.keys(stage.map)[0]]], ASSETS.blocks.planks], 4);
+
+    if (b.placed >= stage.total) {
+      state.house = b.stage;
+      state.building = null;
+      saveState();
+      checkTrophies();
+      Sound.build();
+      shakeScreen();
+      renderHome();
+      renderHomeGrid(before);
+      autoSpeak('Du hast gebaut: ' + stage.name + '!', 400);
+      setTimeout(function () {
+        $('upgrade-title').textContent = stage.name + ' gebaut!';
+        $('upgrade-text').textContent = stage.effect ? 'Neuer Bonus: ' + stage.effect : 'Dein Zuhause ist gewachsen!';
+        showOverlay('overlay-upgrade', true);
+      }, 900);
+      return;
+    }
+
+    if (rowsComplete(stage, b.placed) > rowsComplete(stage, before)) {
+      Sound.correct();
+    }
+    renderHomeGrid(before);
+    $('home-build-progress').textContent = b.placed + ' / ' + stage.total + ' Bl\u00f6cke';
+  });
+
+  $('home-pet').addEventListener('click', function () {
+    var hp = $('home-pet');
+    hp.classList.remove('bounce-egg');
+    void hp.offsetWidth;
+    hp.classList.add('bounce-egg');
+    Sound.pet();
   });
 
   $('btn-upgrade-next').addEventListener('click', function () {
