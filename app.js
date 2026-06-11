@@ -911,21 +911,31 @@
   }
   // ---------- Intro-Song (nur Startbildschirm, einmal pro Besuch) ----------
   var introAudio = null;
-  var introPlayed = false;
+  var introDone = false;
   var introFadeTimer = null;
   function tryStartIntro() {
-    if (introPlayed) return;
+    if (introDone) return;
     if (!$('screen-start').classList.contains('active')) return;
-    introPlayed = true;
     try {
-      introAudio = new Audio(AUDIO_BASE + 'intro.mp3');
-      introAudio.volume = 0.6;
-      introAudio.onended = function () { introAudio = null; };
+      if (!introAudio) {
+        introAudio = new Audio(AUDIO_BASE + 'intro.mp3');
+        introAudio.volume = 0.6;
+        introAudio.onended = function () { introDone = true; introAudio = null; };
+      }
       var p = introAudio.play();
-      if (p && p.catch) p.catch(function () { introAudio = null; });
-    } catch (e) { introAudio = null; }
+      if (p && p.then) {
+        p.then(function () { introDone = true; })
+         .catch(function () { /* blockiert: naechster Tipp versucht es erneut */ });
+      } else {
+        introDone = true;
+      }
+    } catch (e) {}
   }
+  ['click', 'touchend', 'pointerup'].forEach(function (ev) {
+    document.addEventListener(ev, tryStartIntro, { passive: true });
+  });
   function stopIntro() {
+    introDone = true;
     if (!introAudio) return;
     var a = introAudio;
     introAudio = null;
