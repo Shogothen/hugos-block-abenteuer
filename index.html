@@ -9,7 +9,7 @@
 <title>Hugos Block-Abenteuer</title>
 <link rel="icon" type="image/png" href="icon-180.png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 
@@ -224,6 +224,7 @@
       <div class="diff-row">
         <button id="tog-sound" class="mc-btn small"><span>Sound: An</span></button>
         <button id="tog-speak" class="mc-btn small"><span>Vorlesen: An</span></button>
+        <button id="tog-limit" class="mc-btn small"><span>Runden pro Tag: Aus</span></button>
       </div>
       <div class="btn-row">
         <button id="btn-parent-reset" class="mc-btn small danger"><span>Fortschritt löschen</span></button>
@@ -333,11 +334,16 @@
     </div>
     <div id="summary-stats" class="overlay-xp"></div>
     <div id="summary-hint" class="summary-hint"></div>
+    <div id="summary-pause" class="pause-panel" style="display:none">
+      <img class="pause-steve" src="assets/minecraft/mobs/steve_face.png" alt="">
+      <img class="pause-bed" src="assets/minecraft/items/bed_red.png" alt="">
+      <span class="pause-zzz">Z z z</span>
+    </div>
     <div class="summary-btns">
-      <button id="btn-summary-again" class="mc-btn"><span>Nochmal spielen!</span></button>
-      <button id="btn-summary-forge" class="mc-btn small"><span>Zur Schmiede</span></button>
-      <button id="btn-summary-home" class="mc-btn small"><span>Mein Zuhause</span></button>
-      <button id="btn-summary-start" class="mc-btn small"><span>Zum Start</span></button>
+      <button id="btn-summary-again" class="mc-btn"><img class="btn-ico" src="assets/minecraft/blocks/grass.png" alt=""><span>Nochmal spielen!</span></button>
+      <button id="btn-summary-forge" class="mc-btn small"><img class="btn-ico" src="assets/minecraft/items/iron_ingot.png" alt=""><span>Zur Schmiede</span></button>
+      <button id="btn-summary-home" class="mc-btn small"><img class="btn-ico" src="assets/minecraft/blocks/planks_oak.png" alt=""><span>Mein Zuhause</span></button>
+      <button id="btn-summary-start" class="mc-btn small"><img class="btn-ico" src="assets/minecraft/mobs/steve_face.png" alt=""><span>Zum Start</span></button>
     </div>
   </div>
 </div>
@@ -361,6 +367,6 @@
   </div>
 </div>
 
-<script src="app.js?v=17"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>

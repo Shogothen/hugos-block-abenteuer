@@ -313,7 +313,9 @@
       activePet: null,
       trophies: {},
       seenBosses: {},
-      settings: { sound: true, autoSpeak: true },
+      settings: { sound: true, autoSpeak: true, dailyLimit: 0 },
+      seen: { biomes: { forest: true }, pets: {}, trophies: {} },
+      daily: { date: '', rounds: 0 },
       playerName: 'Hugo',
       stats: { answered: 0, correct: 0, byType: {}, sessions: 0, bestStreak: 0, bossesDefeated: 0 },
       mistakes: []
@@ -334,6 +336,11 @@
       s.pets = old.pets || {};
       s.trophies = old.trophies || {};
       s.seenBosses = old.seenBosses || {};
+      s.seen = old.seen || { biomes: { forest: true }, pets: {}, trophies: {} };
+      s.seen.biomes = s.seen.biomes || { forest: true };
+      s.seen.pets = s.seen.pets || {};
+      s.seen.trophies = s.seen.trophies || {};
+      s.daily = old.daily || { date: '', rounds: 0 };
       if (!s.biome) s.biome = 'forest';
       if (!s.difficulty) s.difficulty = 'leicht';
       if (!s.house || s.house < 1) s.house = 1;
@@ -825,7 +832,7 @@
 
   // Robust audio unlock: revive the context on every interaction (iOS suspends it)
   ['pointerdown', 'touchend', 'mousedown', 'keydown'].forEach(function (ev) {
-    document.addEventListener(ev, function () { Sound.unlock(); }, { passive: true });
+    document.addEventListener(ev, function () { Sound.unlock(); unlockVoice(); }, { passive: true });
   });
 
   // UI click sound via delegation (answers play their own feedback sounds)
@@ -872,8 +879,72 @@
   var autoSpeakTimer = null;
   function autoSpeak(text, delay) {
     if (!state.settings.autoSpeak) return;
+    stopVoiceClip();
     clearTimeout(autoSpeakTimer);
     autoSpeakTimer = setTimeout(function () { speak(text); }, delay || 300);
+  }
+
+  // ---------- Sprach-Clips (eingesprochene Audio-Dateien, TTS-Fallback) ----------
+  var AUDIO_BASE = 'assets/voice/';
+  var NAME_CLIPS = {};
+  ['greet', 'hallo', 'praise_super', 'praise_stark', 'boss_intro', 'boss_win']
+    .forEach(function (c) { NAME_CLIPS[c] = true; });
+
+  var voiceAudio = null;
+  function voiceEl() {
+    if (!voiceAudio) {
+      try { voiceAudio = new Audio(); voiceAudio.preload = 'auto'; } catch (e) {}
+    }
+    return voiceAudio;
+  }
+  function unlockVoice() {
+    try {
+      var v = voiceEl();
+      if (v && !v._unlocked) {
+        v._unlocked = true;
+        v.muted = true;
+        var p = v.play();
+        if (p && p.catch) p.catch(function () {});
+        setTimeout(function () { try { v.pause(); v.muted = false; } catch (e) {} }, 60);
+      }
+    } catch (e) {}
+  }
+  function stopVoiceClip() {
+    try { if (voiceAudio && !voiceAudio.paused) voiceAudio.pause(); } catch (e) {}
+  }
+
+  function say(clip, fallback, onend) {
+    if (!state.settings.autoSpeak) { if (onend) onend(); return; }
+    var useClip = clip && (!NAME_CLIPS[clip] || state.playerName === 'Hugo');
+    if (!useClip) {
+      autoSpeak(fallback, 100);
+      if (onend) setTimeout(onend, 900);
+      return;
+    }
+    var v = voiceEl();
+    if (!v) { autoSpeak(fallback, 100); if (onend) setTimeout(onend, 900); return; }
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    clearTimeout(autoSpeakTimer);
+    var done = false;
+    function fail() {
+      if (done) return; done = true;
+      v.onended = v.onerror = null;
+      autoSpeak(fallback, 60);
+      if (onend) setTimeout(onend, 800);
+    }
+    v.onended = function () { if (done) return; done = true; if (onend) onend(); };
+    v.onerror = fail;
+    try {
+      v.src = AUDIO_BASE + clip + '.mp3';
+      var p = v.play();
+      if (p && p.catch) p.catch(fail);
+    } catch (e) { fail(); }
+  }
+  function sayPraise(suffix) {
+    var ids = ['praise_super', 'praise_stark'];
+    var id = ids[rnd(0, ids.length - 1)];
+    if (suffix) say(id, praiseLine(), function () { say(suffix.clip, suffix.text); });
+    else say(id, praiseLine());
   }
 
   // ---------- Screen management ----------
@@ -999,7 +1070,7 @@
       ic.classList.remove('pop'); void ic.offsetWidth; ic.classList.add('pop');
       $('trophy-name').textContent = c.trophy.name;
       Sound.trophy();
-      autoSpeak('Neue Troph\u00e4e: ' + c.trophy.name + '!', 200);
+      say('trophy', 'Neue Troph\u00e4e: ' + c.trophy.name + '!');
       burst(window.innerWidth / 2, window.innerHeight / 2, [c.trophy.icon, ASSETS.items.gold_ingot], 10);
       showOverlay('overlay-trophy', true);
     } else {
@@ -1009,7 +1080,7 @@
       $('petwin-name').textContent = c.pet.name;
       $('petwin-bonus').textContent = c.pet.bonus;
       Sound.pet();
-      autoSpeak('Neuer Begleiter: ' + c.pet.name + '! ' + c.pet.speakBonus, 200);
+      say('pet_new', 'Neuer Begleiter: ' + c.pet.name + '! ' + c.pet.speakBonus);
       burst(window.innerWidth / 2, window.innerHeight / 2, [c.pet.src, ASSETS.ui.heart], 12);
       showOverlay('overlay-pet', true);
     }
@@ -1073,7 +1144,7 @@
       Sound.bossIntro();
       shakeScreen();
       flashRed();
-      autoSpeak('Achtung, ' + state.playerName + '! ' + session.boss.name + ' greift an! ' + session.boss.introLine, 250);
+      say('boss_intro', 'Achtung, ' + state.playerName + '! ' + session.boss.name + ' greift an! ' + session.boss.introLine);
       showOverlay('overlay-bossintro', true);
     } else {
       renderTask();
@@ -1241,12 +1312,12 @@
 
     renderHUD();
     $('reward-banner').classList.remove('show');
-    var speech = t.speak;
     if (session.greet) {
       session.greet = false;
-      speech = 'Los geht\u2019s, ' + state.playerName + '! ' + speech;
+      say('greet', 'Los geht\u2019s, ' + state.playerName + '!', function () { autoSpeak(t.speak, 200); });
+    } else {
+      autoSpeak(t.speak, 350);
     }
-    autoSpeak(speech, 350);
   }
 
   // ---------- Answer handling ----------
@@ -1307,7 +1378,7 @@
         fill.classList.add('dmg-flash');
         renderHUD();
         if (session.firstTry && session.streak > 0 && session.streak % STREAK_BONUS_EVERY === 0) {
-          autoSpeak(praiseLine() + ' ' + session.streak + ' am St\u00fcck \u2014 ein Diamant f\u00fcr dich!', 150);
+          sayPraise({ clip: 'streak_diamant', text: 'Ein Diamant f\u00fcr dich!' });
         }
         var r = $('boss-img').getBoundingClientRect();
         burst(r.left + r.width / 2, r.top + r.height / 2, [RES.eisen.src, RES.gold.src], 6);
@@ -1326,10 +1397,10 @@
         Sound.mine();
         renderXpBar();
         if (bonusDiamond) {
-          autoSpeak(praiseLine() + ' ' + session.streak + ' am St\u00fcck \u2014 ein Diamant f\u00fcr dich!', 500);
+          sayPraise({ clip: 'streak_diamant', text: 'Ein Diamant f\u00fcr dich!' });
           setTimeout(function () { showReward(resKey, xp + bonus, true); }, 550);
         } else {
-          if (session.streak === 3) autoSpeak(praiseLine(), 150);
+          if (session.streak === 3) sayPraise();
           showInlineReward(resKey, xp + bonus);
           setTimeout(function () {
             if (!session || session.ended) return;
@@ -1382,7 +1453,7 @@
     if (!session || session.ended) return;
     session.ended = true;
     Sound.sad();
-    autoSpeak('Oh nein, deine Herzen sind leer! Ruh dich kurz aus \u2014 gleich klappt es bestimmt!', 300);
+    say('ko', 'Oh nein, deine Herzen sind leer! Ruh dich kurz aus \u2014 gleich klappt es bestimmt!');
     showOverlay('overlay-ko', true);
   }
 
@@ -1450,7 +1521,7 @@
       $('bosswin-text').textContent = '+' + xpGain + ' XP';
       renderXpBar();
       refreshAllResBars();
-      autoSpeak(session.boss.defeatLine + ' ' + state.playerName + ' hat ' + session.boss.name + ' besiegt! Du bekommst eine Schatztruhe!', 300);
+      say('boss_win', session.boss.defeatLine + ' ' + state.playerName + ' hat ' + session.boss.name + ' besiegt! Du bekommst eine Schatztruhe!');
       showOverlay('overlay-bosswin', true);
     }, 1000);
   }
@@ -1493,7 +1564,7 @@
       }
       $('levelup-text').textContent = msg;
       Sound.levelup();
-      autoSpeak('Level ' + lvl + '! ' + msg, 200);
+      say('levelup', 'Level ' + lvl + '! ' + msg);
       levelUpNext = next;
       checkTrophies();
       showOverlay('overlay-levelup', true);
@@ -1712,7 +1783,24 @@
   });
 
   // ---------- Summary ----------
+  function dailyTick() {
+    var today = new Date().toISOString().slice(0, 10);
+    if (state.daily.date !== today) { state.daily.date = today; state.daily.rounds = 0; }
+    state.daily.rounds++;
+    saveState();
+  }
+  function pauseDue() {
+    var lim = state.settings.dailyLimit;
+    return lim > 0 && state.daily.rounds >= lim;
+  }
+
   function showSummary() {
+    dailyTick();
+    var paused = pauseDue();
+    $('summary-pause').style.display = paused ? 'flex' : 'none';
+    $('btn-summary-again').classList.toggle('small', paused);
+    $('btn-summary-again').classList.toggle('play', !paused);
+    if (paused) autoSpeak('Toll gespielt! Jetzt ist Zeit f\u00fcr eine Pause.', 600);
     state.stats.sessions++;
 
     if (petActive('schwein')) {
@@ -1951,7 +2039,7 @@
       shakeScreen();
       renderHome();
       renderHomeGrid(before);
-      autoSpeak('Du hast gebaut: ' + stage.name + '!', 400);
+      say('haus', 'Du hast gebaut: ' + stage.name + '!');
       setTimeout(function () {
         $('upgrade-title').textContent = stage.name + ' gebaut!';
         $('upgrade-text').textContent = stage.effect ? 'Neuer Bonus: ' + stage.effect : 'Dein Zuhause ist gewachsen!';
@@ -2240,6 +2328,51 @@
     return 'pan-evening';
   }
 
+  // ---------- "Neu!"-Sterne im Menue ----------
+  function forgeAttention() {
+    var ns = SWORD_TIERS[state.equip.schwert + 1];
+    if (ns && canAfford(ns.cost)) return true;
+    for (var i = 0; i < ARMOR_SLOTS.length; i++) {
+      var sl = ARMOR_SLOTS[i];
+      var nt = ARMOR_TIERS[state.equip[sl.id] + 1];
+      if (nt) {
+        var cost = {}; cost[nt.res] = nt.costs[sl.id];
+        if (canAfford(cost)) return true;
+      }
+    }
+    return false;
+  }
+  function homeAttention() {
+    if (state.building) return true;
+    var next = HOUSE_STAGES[state.house];
+    return !!(next && next.cost && canAfford(next.cost));
+  }
+  function biomeAttention() {
+    return BIOMES.some(function (b) { return state.level >= b.minLevel && !state.seen.biomes[b.id]; });
+  }
+  function petAttention() {
+    return Object.keys(state.pets).some(function (id) { return !state.seen.pets[id]; });
+  }
+  function trophyAttention() {
+    return Object.keys(state.trophies).some(function (id) { return !state.seen.trophies[id]; });
+  }
+  function applyMenuBadges() {
+    var map = {
+      'btn-start-home': homeAttention(),
+      'btn-start-forge': forgeAttention(),
+      'btn-start-pets': petAttention(),
+      'btn-start-trophies': trophyAttention(),
+      'btn-start-world': biomeAttention()
+    };
+    Object.keys(map).forEach(function (id) {
+      var btn = $(id);
+      if (!btn) return;
+      var badge = btn.querySelector('.menu-badge');
+      if (map[id] && !badge) btn.appendChild(img(A + 'items/nether_star.png', 'menu-badge'));
+      else if (!map[id] && badge) btn.removeChild(badge);
+    });
+  }
+
   var WALK = A + 'mobs/walk/';
   var WALKERS = {
     pig: {
@@ -2443,6 +2576,7 @@
 
   // ---------- Start screen ----------
   function renderStart() {
+    applyMenuBadges();
     buildPanorama($('panorama-start'));
     var lvl = levelOf(state.xp);
     $('start-name').textContent = state.playerName;
@@ -2493,7 +2627,7 @@
     var f = $('start-face');
     f.classList.remove('bounce-egg'); void f.offsetWidth; f.classList.add('bounce-egg');
     Sound.pet();
-    autoSpeak('Hallo, ich bin ' + state.playerName + '!', 50);
+    say('hallo', 'Hallo, ich bin ' + state.playerName + '!');
   });
   $('start-equip').addEventListener('click', function (e) {
     if (e.target.classList && e.target.classList.contains('start-pet')) {
@@ -2511,9 +2645,9 @@
   $('btn-start-game').addEventListener('click', startSession);
   $('btn-start-home').addEventListener('click', function () { renderHome(); show('screen-home'); });
   $('btn-start-forge').addEventListener('click', function () { renderForge(); show('screen-forge'); });
-  $('btn-start-pets').addEventListener('click', function () { renderPets(); show('screen-pets'); });
-  $('btn-start-trophies').addEventListener('click', function () { renderTrophies(); show('screen-trophies'); });
-  $('btn-start-world').addEventListener('click', function () { renderWorldMap(); show('screen-worldmap'); });
+  $('btn-start-pets').addEventListener('click', function () { Object.keys(state.pets).forEach(function (id) { state.seen.pets[id] = true; }); saveState(); renderPets(); show('screen-pets'); });
+  $('btn-start-trophies').addEventListener('click', function () { Object.keys(state.trophies).forEach(function (id) { state.seen.trophies[id] = true; }); saveState(); renderTrophies(); show('screen-trophies'); });
+  $('btn-start-world').addEventListener('click', function () { BIOMES.forEach(function (b) { if (state.level >= b.minLevel) state.seen.biomes[b.id] = true; }); saveState(); renderWorldMap(); show('screen-worldmap'); });
   $('btn-start-parent').addEventListener('click', function () { resetGate(); show('screen-parent'); });
 
   // ---------- World map ----------
@@ -2657,7 +2791,18 @@
     $('tog-sound').classList.toggle('selected', state.settings.sound);
     $('tog-speak').querySelector('span').textContent = 'Vorlesen: ' + (state.settings.autoSpeak ? 'An' : 'Aus');
     $('tog-speak').classList.toggle('selected', state.settings.autoSpeak);
+    var lim = state.settings.dailyLimit;
+    $('tog-limit').querySelector('span').textContent = 'Runden pro Tag: ' + (lim > 0 ? lim : 'Aus');
+    $('tog-limit').classList.toggle('selected', lim > 0);
   }
+
+  $('tog-limit').addEventListener('click', function () {
+    var seq = [0, 2, 3, 4, 5];
+    var i = seq.indexOf(state.settings.dailyLimit);
+    state.settings.dailyLimit = seq[(i + 1) % seq.length];
+    saveState();
+    renderToggles();
+  });
 
   $('tog-sound').addEventListener('click', function () {
     state.settings.sound = !state.settings.sound;
