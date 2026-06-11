@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Hugos Block-Abenteuer</title>
 
-  <!-- iPad: als Vollbild-App vom Home-Bildschirm -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -21,18 +20,19 @@
   <section id="screen-start" class="screen active">
     <h1>Hugos<br>Block-Abenteuer</h1>
     <img id="start-avatar" src="assets/minecraft/mobs/steve_face.png" alt="Hugo">
+    <div id="start-equip" class="start-equip"></div>
     <div id="start-level-row">
       <img id="start-pickaxe" src="assets/minecraft/items/wood_pickaxe.png" alt="">
       <div id="start-level">Level 1</div>
     </div>
+    <div id="res-start" class="res-bar"></div>
     <div class="menu-stack">
       <button id="btn-start-game" class="mc-btn"><span>Spiel starten</span></button>
-      <button id="btn-start-build" class="mc-btn"><span>Baustelle</span></button>
+      <button id="btn-start-home" class="mc-btn"><span>Mein Zuhause</span></button>
+      <button id="btn-start-forge" class="mc-btn"><span>Schmiede</span></button>
       <button id="btn-start-world" class="mc-btn"><span>Weltkarte</span></button>
-      <button id="btn-start-inventory" class="mc-btn"><span>Inventar</span></button>
       <button id="btn-start-parent" class="mc-btn"><span>Eltern</span></button>
     </div>
-    <div id="hotbar"></div>
     <div id="ground-strip"></div>
   </section>
 
@@ -43,7 +43,6 @@
       <div class="hud-center">
         <div id="hud-progress">Aufgabe 1 / 8</div>
         <div id="hud-streak"></div>
-        <div id="hud-build"></div>
       </div>
       <div class="xp-wrap">
         <div id="hud-level-label">Level 1</div>
@@ -56,10 +55,16 @@
       </div>
     </div>
 
+    <div id="res-practice" class="res-bar"></div>
+
     <div id="boss-area" style="display:none">
       <img id="boss-img" src="assets/minecraft/mobs/creeper_face.png" alt="">
       <div id="boss-name">Creeper</div>
-      <div id="boss-hearts"></div>
+      <div class="boss-hp-wrap">
+        <div class="boss-hp-bar"><div id="boss-hp-fill"></div></div>
+        <div id="boss-hp-text">4 / 4</div>
+      </div>
+      <div id="boss-dmg-label" class="boss-dmg-label"></div>
     </div>
 
     <div id="task-panel" class="mc-panel">
@@ -72,32 +77,38 @@
     <div id="answers" class="answers"></div>
   </section>
 
-  <!-- ================= BAUSTELLE ================= -->
-  <section id="screen-build" class="screen">
-    <h2 id="build-title">Baumhaus</h2>
-    <div id="build-progress">0 / 30 Blöcke</div>
+  <!-- ================= MEIN ZUHAUSE ================= -->
+  <section id="screen-home" class="screen">
+    <h2>Mein Zuhause</h2>
+    <div id="res-home" class="res-bar"></div>
+    <div id="home-title" class="screen-sub">Stufe 1: Lagerplatz</div>
+    <div id="home-effect" class="screen-hint"></div>
     <div class="mc-panel build-panel">
-      <div id="build-grid" class="build-grid"></div>
+      <div id="home-grid" class="build-grid"></div>
     </div>
+    <div id="home-next-panel" class="mc-panel next-panel">
+      <div id="home-next-name" class="next-name">Nächste Stufe</div>
+      <div id="home-next-cost" class="cost-row"></div>
+      <button id="btn-home-upgrade" class="mc-btn"><span>Ausbauen!</span></button>
+    </div>
+    <div id="home-max" class="screen-hint" style="display:none">Deine Festung ist fertig — das größte Zuhause!</div>
     <div class="btn-row">
-      <button id="btn-build-place" class="mc-btn"><span>Bauen!</span></button>
-      <button id="btn-build-creative" class="mc-btn"><span>Kreativ-Modus</span></button>
+      <button id="btn-home-forge" class="mc-btn small"><span>Zur Schmiede</span></button>
+      <button id="btn-home-back" class="mc-btn small"><span>Zurück</span></button>
     </div>
-    <div id="build-hint" class="build-hint"></div>
-    <div id="builds-done"></div>
-    <button id="btn-build-back" class="mc-btn small"><span>Zurück</span></button>
   </section>
 
-  <!-- ================= KREATIV-MODUS ================= -->
-  <section id="screen-creative" class="screen">
-    <h2>Kreativ-Modus</h2>
-    <div id="creative-free" class="build-hint">Freie Blöcke: 0</div>
-    <div id="creative-palette" class="creative-palette"></div>
-    <div class="mc-panel build-panel">
-      <div id="creative-grid" class="build-grid creative-grid"></div>
+  <!-- ================= SCHMIEDE ================= -->
+  <section id="screen-forge" class="screen">
+    <h2>Schmiede</h2>
+    <div id="res-forge" class="res-bar"></div>
+    <div id="forge-character" class="forge-character"></div>
+    <div id="forge-stats" class="screen-hint"></div>
+    <div id="forge-rows" class="forge-rows"></div>
+    <div class="btn-row">
+      <button id="btn-forge-home" class="mc-btn small"><span>Mein Zuhause</span></button>
+      <button id="btn-forge-back" class="mc-btn small"><span>Zurück</span></button>
     </div>
-    <div class="build-hint">Block antippen zum Bauen — nochmal antippen zum Abbauen.</div>
-    <button id="btn-creative-back" class="mc-btn small"><span>Zur Baustelle</span></button>
   </section>
 
   <!-- ================= WELTKARTE ================= -->
@@ -105,18 +116,6 @@
     <h2>Weltkarte</h2>
     <div id="biome-grid"></div>
     <button id="btn-world-back" class="mc-btn"><span>Zurück</span></button>
-  </section>
-
-  <!-- ================= INVENTAR ================= -->
-  <section id="screen-inventory" class="screen">
-    <h2>Inventar</h2>
-    <div class="mc-panel">
-      <div id="inv-grid" class="inv-grid"></div>
-      <div id="inv-hint" class="inv-empty-hint" style="display:none">
-        Noch leer — löse Aufgaben<br>und sammle Items!
-      </div>
-    </div>
-    <button id="btn-inv-back" class="mc-btn"><span>Zurück</span></button>
   </section>
 
   <!-- ================= ELTERN ================= -->
@@ -152,7 +151,7 @@
   <div id="overlay-reward" class="overlay">
     <div class="mc-panel">
       <img id="reward-item" src="assets/minecraft/items/diamond.png" alt="">
-      <div id="reward-text">+1 Diamant!</div>
+      <div id="reward-text">+1 Diamant geschürft!</div>
       <div id="reward-xp">+10 XP</div>
       <button id="btn-reward-next" class="mc-btn"><span>Weiter</span></button>
     </div>
@@ -167,6 +166,16 @@
     </div>
   </div>
 
+  <div id="overlay-bosswin" class="overlay">
+    <div class="mc-panel">
+      <div id="bosswin-title">Besiegt!</div>
+      <div class="loot-label">Deine Beute:</div>
+      <div id="bosswin-loot" class="loot-row"></div>
+      <div id="bosswin-text"></div>
+      <button id="btn-bosswin-next" class="mc-btn"><span>Weiter</span></button>
+    </div>
+  </div>
+
   <div id="overlay-levelup" class="overlay">
     <div class="mc-panel">
       <div id="levelup-title">Level 2!</div>
@@ -176,33 +185,37 @@
     </div>
   </div>
 
-  <div id="overlay-bosswin" class="overlay">
+  <div id="overlay-craft" class="overlay">
     <div class="mc-panel">
-      <div id="bosswin-title">Besiegt!</div>
-      <img id="bosswin-item" src="assets/minecraft/items/apple_golden.png" alt="">
-      <div id="bosswin-text"></div>
-      <button id="btn-bosswin-next" class="mc-btn"><span>Weiter</span></button>
+      <div id="craft-title">Geschmiedet!</div>
+      <img id="craft-item" src="assets/minecraft/items/iron_sword.png" alt="">
+      <div id="craft-text"></div>
+      <button id="btn-craft-next" class="mc-btn"><span>Stark!</span></button>
     </div>
   </div>
 
-  <div id="overlay-builddone" class="overlay">
+  <div id="overlay-upgrade" class="overlay">
     <div class="mc-panel">
-      <div id="builddone-title">Fertig gebaut!</div>
-      <div id="builddone-grid" class="build-grid"></div>
-      <div id="builddone-text"></div>
-      <button id="btn-builddone-next" class="mc-btn"><span>Weiter</span></button>
+      <div id="upgrade-title">Ausgebaut!</div>
+      <div id="upgrade-text"></div>
+      <button id="btn-upgrade-next" class="mc-btn"><span>Weiter</span></button>
     </div>
   </div>
 
   <div id="overlay-summary" class="overlay">
     <div class="mc-panel">
       <div id="summary-title">Geschafft!</div>
+      <div class="loot-label">Geschürft:</div>
       <div id="summary-items"></div>
       <div id="summary-stats"></div>
+      <div id="summary-hint" class="summary-hint"></div>
       <div class="btn-row">
         <button id="btn-summary-again" class="mc-btn"><span>Nochmal spielen</span></button>
-        <button id="btn-summary-build" class="mc-btn"><span>Zur Baustelle</span></button>
-        <button id="btn-summary-home" class="mc-btn"><span>Zum Start</span></button>
+      </div>
+      <div class="btn-row">
+        <button id="btn-summary-forge" class="mc-btn small"><span>Schmiede</span></button>
+        <button id="btn-summary-home" class="mc-btn small"><span>Zuhause</span></button>
+        <button id="btn-summary-start" class="mc-btn small"><span>Start</span></button>
       </div>
     </div>
   </div>

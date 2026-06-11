@@ -1,8 +1,8 @@
 /* ============================================================
-   Hugos Block-Abenteuer — App-Logik (Version 5.0)
-   Vier Schwierigkeitsstufen (bis 100, Einmaleins, Halbieren),
-   interaktive Baustelle mit Block-Vorrat, Kreativ-Modus,
-   Boss-Fights, Biome, Progression, Fehler-Wiederholung.
+   Hugos Block-Abenteuer — App-Logik (Version 6.0)
+   Ressourcen-Wirtschaft, Schmiede mit Ausrüstung (echte Effekte),
+   Haus-Ausbau in 6 Stufen, skalierende Boss-Kämpfe mit Beute,
+   4 Schwierigkeitsstufen bis 100, Fehler-Wiederholung.
    ============================================================ */
 
 (function () {
@@ -25,20 +25,15 @@
       planks: A + 'blocks/planks_oak.png',
       logOak: A + 'blocks/log_oak.png',
       leavesOak: A + 'blocks/leaves_oak.png',
-      diamondOre: A + 'blocks/diamond_ore.png',
-      ironOre: A + 'blocks/iron_ore.png',
-      goldOre: A + 'blocks/gold_ore.png',
-      emeraldOre: A + 'blocks/emerald_ore.png'
+      ironBlock: A + 'blocks/iron_block.png',
+      goldBlock: A + 'blocks/gold_block.png',
+      diamondBlock: A + 'blocks/diamond_block.png'
     },
     items: {
       diamond: A + 'items/diamond.png',
-      emerald: A + 'items/emerald.png',
       gold_ingot: A + 'items/gold_ingot.png',
       iron_ingot: A + 'items/iron_ingot.png',
-      apple: A + 'items/apple.png',
-      apple_golden: A + 'items/apple_golden.png',
-      xp_bottle: A + 'items/experience_bottle.png',
-      book: A + 'items/book.png'
+      apple_golden: A + 'items/apple_golden.png'
     },
     mobs: {
       steve: A + 'mobs/steve_face.png',
@@ -51,32 +46,127 @@
       heartHalf: A + 'ui/heart_half.png',
       heartBg: A + 'ui/heart_background.png',
       xpEmpty: A + 'ui/xp_bar_empty.png',
-      xpFull: A + 'ui/xp_bar_full.png'
+      xpFull: A + 'ui/xp_bar_full.png',
+      slot: A + 'ui/slot.png'
     }
   };
 
-  var ITEM_NAMES = {
-    diamond: ['Diamant', 'Diamanten'],
-    emerald: ['Smaragd', 'Smaragde'],
-    gold_ingot: ['Goldbarren', 'Goldbarren'],
-    iron_ingot: ['Eisenbarren', 'Eisenbarren'],
-    apple: ['Apfel', '\u00c4pfel'],
-    apple_golden: ['Goldener Apfel', 'Goldene \u00c4pfel']
+  var COUNT_ITEM_SRC = {
+    diamant: A + 'items/diamond.png',
+    smaragd: A + 'items/emerald.png',
+    apfel: A + 'items/apple.png',
+    goldbarren: A + 'items/gold_ingot.png'
+  };
+  var COUNT_ITEM_NAMES = {
+    diamant: ['Diamant', 'Diamanten'],
+    smaragd: ['Smaragd', 'Smaragde'],
+    apfel: ['Apfel', '\u00c4pfel'],
+    goldbarren: ['Goldbarren', 'Goldbarren']
+  };
+  var COUNT_ITEMS = ['diamant', 'smaragd', 'apfel', 'goldbarren'];
+
+  // ---------- Resources ----------
+  var RES = {
+    holz: { name: 'Holz', src: A + 'blocks/log_oak.png' },
+    stein: { name: 'Stein', src: A + 'blocks/cobblestone.png' },
+    eisen: { name: 'Eisen', src: A + 'items/iron_ingot.png' },
+    gold: { name: 'Gold', src: A + 'items/gold_ingot.png' },
+    diamant: { name: 'Diamant', src: A + 'items/diamond.png' }
+  };
+  var RES_KEYS = ['holz', 'stein', 'eisen', 'gold', 'diamant'];
+
+  // Drop weights per difficulty (must sum to 100)
+  var DROP_WEIGHTS = {
+    leicht: { holz: 45, stein: 35, eisen: 15, gold: 4, diamant: 1 },
+    mittel: { holz: 35, stein: 33, eisen: 20, gold: 9, diamant: 3 },
+    schwer: { holz: 24, stein: 28, eisen: 26, gold: 15, diamant: 7 },
+    profi:  { holz: 18, stein: 22, eisen: 27, gold: 20, diamant: 13 }
   };
 
-  var BLOCK_NAMES = {
-    grass: 'Grasblock', dirt: 'Erde', stone: 'Stein', cobblestone: 'Bruchstein',
-    sand: 'Sand', snowGrass: 'Schneeblock', netherrack: 'Netherrack',
-    obsidian: 'Obsidian', glowstone: 'Leuchtstein', brick: 'Ziegel',
-    planks: 'Holzbretter', logOak: 'Holzstamm', leavesOak: 'Eichenlaub',
-    diamondOre: 'Diamanterz', ironOre: 'Eisenerz', goldOre: 'Golderz',
-    emeraldOre: 'Smaragderz'
-  };
+  // ---------- Equipment ----------
+  var SWORD_TIERS = [
+    { id: 'holz', name: 'Holz-Schwert', src: A + 'items/wood_sword.png', cost: { holz: 2 } },
+    { id: 'stein', name: 'Stein-Schwert', src: A + 'items/stone_sword.png', cost: { stein: 3, holz: 1 } },
+    { id: 'eisen', name: 'Eisen-Schwert', src: A + 'items/iron_sword.png', cost: { eisen: 3, holz: 1 } },
+    { id: 'gold', name: 'Gold-Schwert', src: A + 'items/gold_sword.png', cost: { gold: 3, holz: 1 } },
+    { id: 'diamant', name: 'Diamant-Schwert', src: A + 'items/diamond_sword.png', cost: { diamant: 2, holz: 1 } }
+  ];
 
-  var COUNT_ITEMS = ['diamond', 'emerald', 'apple', 'gold_ingot'];
+  var ARMOR_SLOTS = [
+    { id: 'helm', name: 'Helm', tex: 'helmet' },
+    { id: 'brust', name: 'Brustpanzer', tex: 'chestplate' },
+    { id: 'hose', name: 'Hose', tex: 'leggings' },
+    { id: 'stiefel', name: 'Stiefel', tex: 'boots' }
+  ];
+  var ARMOR_TIERS = [
+    { id: 'ketten', name: 'Ketten', prefix: 'chainmail', res: 'eisen', costs: { helm: 2, brust: 3, hose: 2, stiefel: 1 } },
+    { id: 'eisen', name: 'Eisen', prefix: 'iron', res: 'eisen', costs: { helm: 3, brust: 5, hose: 4, stiefel: 2 } },
+    { id: 'gold', name: 'Gold', prefix: 'gold', res: 'gold', costs: { helm: 3, brust: 4, hose: 3, stiefel: 2 } },
+    { id: 'diamant', name: 'Diamant', prefix: 'diamond', res: 'diamant', costs: { helm: 2, brust: 3, hose: 2, stiefel: 1 } }
+  ];
+  function armorSrc(tierIdx, slot) {
+    return A + 'items/' + ARMOR_TIERS[tierIdx].prefix + '_' + slot.tex + '.png';
+  }
 
+  // ---------- House stages ----------
+  var HOUSE_STAGES = [
+    {
+      name: 'Lagerplatz', cost: null, effect: '',
+      map: { T: 'logOak' },
+      rows: ['..T..', '.TTT.']
+    },
+    {
+      name: 'Holzh\u00fctte', cost: { holz: 10, stein: 4 }, effect: '',
+      map: { P: 'planks', G: 'glowstone' },
+      rows: ['..P..', '.PPP.', 'PG.GP', 'P...P', 'PP.PP']
+    },
+    {
+      name: 'Steinhaus', cost: { stein: 12, holz: 4, eisen: 2 }, effect: '+1 Herz',
+      map: { P: 'planks', S: 'stone', G: 'glowstone', C: 'cobblestone' },
+      rows: ['..PPP..', '.PPPPP.', 'SSG.GSS', 'S.....S', 'SSS.SSS', 'CCC.CCC']
+    },
+    {
+      name: 'Backstein-Haus', cost: { stein: 10, eisen: 6, gold: 2 }, effect: '+1 Herz',
+      map: { P: 'planks', B: 'brick', G: 'glowstone', L: 'leavesOak' },
+      rows: ['..PPP..', '.PPPPP.', 'BBG.GBB', 'B.....B', 'BBB.BBB', 'L.....L']
+    },
+    {
+      name: 'Gro\u00dfes Steinhaus', cost: { stein: 12, eisen: 8, gold: 4, diamant: 1 }, effect: '+2 Herzen',
+      map: { P: 'planks', S: 'stone', G: 'glowstone', I: 'ironBlock' },
+      rows: ['...PPP...', '..PPPPP..', '.PPPPPPP.', 'SSG...GSS', 'S.......S', 'S.G...G.S', 'SSSS.SSSS', 'I.......I']
+    },
+    {
+      name: 'Festung', cost: { stein: 14, eisen: 10, gold: 6, diamant: 3 }, effect: '+2 Herzen \u00b7 Doppelte Boss-Beute',
+      map: { O: 'obsidian', G: 'glowstone', D: 'diamondBlock', Au: 'goldBlock', I: 'ironBlock', N: 'goldBlock' },
+      rows: ['O.O.O.O.O', 'OOOOOOOOO', 'OGO...OGO', 'O.......O', 'O..D.D..O', 'O.......O', 'OOOO.OOOO', 'N.......N']
+    }
+  ];
+
+  HOUSE_STAGES.forEach(function (st) {
+    st.order = [];
+    for (var r = st.rows.length - 1; r >= 0; r--) {
+      for (var c = 0; c < st.rows[r].length; c++) {
+        var ch = st.rows[r][c];
+        if (ch !== '.') st.order.push({ r: r, c: c, key: st.map[ch] });
+      }
+    }
+    st.total = st.order.length;
+  });
+
+  function houseHeartBonus(stage) {
+    var b = 0;
+    if (stage >= 3) b += 1;
+    if (stage >= 4) b += 1;
+    if (stage >= 5) b += 2;
+    if (stage >= 6) b += 2;
+    return Math.min(b, 4);
+  }
+
+  // ---------- Core constants ----------
   var SESSION_LENGTH = 8;
   var XP_PER_LEVEL = 100;
+  var STREAK_BONUS_EVERY = 5;
+  var STREAK_BONUS_XP = 5;
 
   var PICKAXES = [
     { src: A + 'items/wood_pickaxe.png', name: 'Holz-Spitzhacke' },
@@ -92,10 +182,6 @@
     { id: 'zombie', name: 'Zombie' },
     { id: 'skeleton', name: 'Skelett' }
   ];
-  var BOSS_HP = 3;
-  var BOSS_XP = 25;
-  var STREAK_BONUS_EVERY = 5;
-  var STREAK_BONUS_XP = 5;
 
   var BIOMES = [
     { id: 'forest', name: 'Wald', blockKey: 'grass', minLevel: 1 },
@@ -109,103 +195,19 @@
     return BIOMES[0];
   }
 
-  // ---------- Build projects (bottom-up placement) ----------
-  var BUILD_PROJECTS = [
-    {
-      id: 'treehouse', name: 'Baumhaus',
-      map: { L: 'leavesOak', P: 'planks', T: 'logOak', G: 'glowstone' },
-      rows: [
-        '.LLLLL.',
-        'LLLLLLL',
-        'LLPPPLL',
-        '.PPGPP.',
-        '..PPP..',
-        '...T...',
-        '...T...',
-        '...T...'
-      ]
-    },
-    {
-      id: 'cavemine', name: 'Mine',
-      map: { S: 'stone', C: 'cobblestone', D: 'diamondOre', I: 'ironOre', O: 'goldOre', G: 'glowstone' },
-      rows: [
-        'SSSSSSSS',
-        'SD....IS',
-        'S..GG..S',
-        'S......S',
-        'SI....DS',
-        'S..OO..S',
-        'CCCCCCCC'
-      ]
-    },
-    {
-      id: 'desertpalace', name: 'W\u00fcsten-Palast',
-      map: { B: 'brick', S: 'sand', G: 'glowstone' },
-      rows: [
-        'B.B.B.B.B',
-        'BBBBBBBBB',
-        '.S..G..S.',
-        '.S.....S.',
-        '.SSSSSSS.',
-        '.S..G..S.',
-        '.SS...SS.'
-      ]
-    },
-    {
-      id: 'snowigloo', name: 'Schnee-Iglu',
-      map: { W: 'snowGrass', G: 'glowstone' },
-      rows: [
-        '..WWWW..',
-        '.WWWWWW.',
-        'WWWGGWWW',
-        'WW....WW',
-        'WW....WW',
-        'WWWW.WWW'
-      ]
-    },
-    {
-      id: 'netherfort', name: 'Nether-Festung',
-      map: { N: 'netherrack', O: 'obsidian', G: 'glowstone' },
-      rows: [
-        'O.O...O.O',
-        'OOOOOOOOO',
-        'ONG...GNO',
-        'ON.....NO',
-        'ON.....NO',
-        'NNNNNNNNN',
-        'O.......O'
-      ]
-    }
-  ];
-
-  BUILD_PROJECTS.forEach(function (p) {
-    p.order = [];
-    for (var r = p.rows.length - 1; r >= 0; r--) {
-      for (var c = 0; c < p.rows[r].length; c++) {
-        var ch = p.rows[r][c];
-        if (ch !== '.') p.order.push({ r: r, c: c, key: p.map[ch] });
-      }
-    }
-    p.total = p.order.length;
-  });
-
-  // ---------- Creative mode ----------
-  var CREATIVE_COLS = 12;
-  var CREATIVE_ROWS = 8;
-  var CREATIVE_PALETTE = ['grass', 'dirt', 'stone', 'planks', 'logOak', 'leavesOak', 'sand', 'brick', 'glowstone', 'obsidian'];
-
   // ---------- State ----------
   var STORAGE_KEY = 'hugos-block-abenteuer-v1';
 
   function defaultState() {
     return {
+      v: 6,
       xp: 0,
       biome: 'forest',
       difficulty: 'leicht',
-      inventory: {},
-      build: { projectIndex: 0, placed: 0, vorrat: 0, free: 0, seen: 0, completed: [], freeGranted: false },
-      creative: { grid: [], sel: 'grass' },
-      stats: { answered: 0, correct: 0, byType: {}, sessions: 0, bestStreak: 0 },
+      res: { holz: 0, stein: 0, eisen: 0, gold: 0, diamant: 0 },
+      equip: { schwert: -1, helm: -1, brust: -1, hose: -1, stiefel: -1 },
+      house: 1,
+      stats: { answered: 0, correct: 0, byType: {}, sessions: 0, bestStreak: 0, bossesDefeated: 0 },
       mistakes: []
     };
   }
@@ -214,20 +216,27 @@
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return defaultState();
-      var s = Object.assign(defaultState(), JSON.parse(raw));
+      var old = JSON.parse(raw);
+      var s = Object.assign(defaultState(), old);
       var d = defaultState();
-      s.stats = Object.assign(d.stats, s.stats || {});
-      s.build = Object.assign(d.build, s.build || {});
-      s.creative = Object.assign(d.creative, s.creative || {});
+      s.stats = Object.assign(d.stats, old.stats || {});
+      s.res = Object.assign(d.res, old.res || {});
+      s.equip = Object.assign(d.equip, old.equip || {});
       if (!s.biome) s.biome = 'forest';
       if (!s.difficulty) s.difficulty = 'leicht';
-      // One-time grant: retroactive creative blocks for everything already solved
-      if (!s.build.freeGranted) {
-        s.build.free = (s.build.free || 0) + Math.min(s.stats.correct || 0, 40);
-        s.build.freeGranted = true;
-      }
-      if (!s.creative.grid || s.creative.grid.length !== CREATIVE_COLS * CREATIVE_ROWS) {
-        s.creative.grid = new Array(CREATIVE_COLS * CREATIVE_ROWS).fill(null);
+      if (!s.house || s.house < 1) s.house = 1;
+
+      // Migration from versions before 6: convert progress into resources
+      if (!old.v || old.v < 6) {
+        var c = s.stats.correct || 0;
+        var inv = old.inventory || {};
+        var build = old.build || {};
+        s.res.holz += Math.min(30, Math.round(c * 0.5)) + Math.min(20, build.free || 0);
+        s.res.stein += Math.min(30, Math.round(c * 0.4)) + Math.min(15, build.placed || 0);
+        s.res.eisen += Math.min(15, Math.round(c * 0.2));
+        s.res.gold += Math.min(8, Math.round(c * 0.1)) + (inv.apple_golden || 0);
+        s.res.diamant += (inv.diamond || 0) + Math.min(5, Math.round(c * 0.05));
+        s.v = 6;
       }
       return s;
     } catch (e) { return defaultState(); }
@@ -238,14 +247,40 @@
   }
 
   var state = loadState();
-  if (!state.creative.grid.length) state.creative.grid = new Array(CREATIVE_COLS * CREATIVE_ROWS).fill(null);
-
-  function currentProject() {
-    return BUILD_PROJECTS[state.build.projectIndex % BUILD_PROJECTS.length];
-  }
 
   function levelOf(xp) { return Math.floor(xp / XP_PER_LEVEL) + 1; }
   function xpInLevel(xp) { return xp % XP_PER_LEVEL; }
+
+  // ---------- Derived combat values ----------
+  function armorPoints() {
+    var pts = 0;
+    ARMOR_SLOTS.forEach(function (sl) {
+      var t = state.equip[sl.id];
+      if (t >= 0) pts += t + 1;
+    });
+    return pts; // 0..16
+  }
+  function totalHearts() {
+    return Math.min(10, 5 + Math.floor(armorPoints() / 3) + houseHeartBonus(state.house));
+  }
+  function swordDamage() {
+    return state.equip.schwert < 0 ? 1 : state.equip.schwert + 2; // 1..6
+  }
+  function bossRotation() { return Math.floor(state.stats.bossesDefeated / 3); }
+  function bossMaxHp() { return Math.min(4 + 3 * bossRotation(), 16); }
+  function bossLoot() {
+    var rot = bossRotation();
+    var loot = {
+      holz: 2,
+      stein: 3 + Math.min(rot, 5),
+      eisen: 2 + Math.min(rot, 4),
+      gold: 1 + Math.floor(rot / 2),
+      diamant: Math.max(1, Math.floor((rot + 1) / 2))
+    };
+    if (state.house >= 6) RES_KEYS.forEach(function (k) { if (loot[k]) loot[k] *= 2; });
+    return loot;
+  }
+  function bossXp() { return 25 + 5 * bossRotation(); }
 
   // ---------- Helpers ----------
   function $(id) { return document.getElementById(id); }
@@ -273,7 +308,14 @@
   }
   function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
 
-  // Options around the correct answer; offsets define plausible distractors
+  function canAfford(cost) {
+    for (var k in cost) if ((state.res[k] || 0) < cost[k]) return false;
+    return true;
+  }
+  function payCost(cost) {
+    for (var k in cost) state.res[k] -= cost[k];
+  }
+
   function makeOptions(correct, min, max, offsets) {
     var opts = [correct];
     var cands = shuffle(offsets.map(function (o) { return correct + o; }));
@@ -295,8 +337,8 @@
     var item = pick(COUNT_ITEMS);
     return {
       type: 'count', item: item, n: n,
-      question: 'Wie viele ' + ITEM_NAMES[item][1] + ' siehst du?',
-      speak: 'Wie viele ' + ITEM_NAMES[item][1] + ' siehst du?',
+      question: 'Wie viele ' + COUNT_ITEM_NAMES[item][1] + ' siehst du?',
+      speak: 'Wie viele ' + COUNT_ITEM_NAMES[item][1] + ' siehst du?',
       correct: n, options: makeOptions(n, 1, 10, [-2, -1, 1, 2]), kind: 'number'
     };
   }
@@ -306,7 +348,6 @@
     if (diff === 'leicht') { a = rnd(1, 9); b = rnd(1, Math.min(9, 10 - a)); }
     else if (diff === 'mittel') { a = rnd(2, 15); b = rnd(2, Math.min(18, 20 - a)); }
     else if (diff === 'schwer') {
-      // Up to 100, biased towards friendly tens
       if (Math.random() < 0.5) { a = rnd(1, 9) * 10; b = rnd(2, Math.min(60, 100 - a)); }
       else { a = rnd(11, 79); b = rnd(2, Math.min(20, 100 - a)); }
     } else { a = rnd(13, 87); b = rnd(6, Math.min(86, 100 - a)); }
@@ -356,8 +397,8 @@
     var correct = left > right ? 'links' : (right > left ? 'rechts' : 'gleich');
     return {
       type: 'compare', item: item, left: left, right: right,
-      question: 'Wo sind mehr ' + ITEM_NAMES[item][1] + '?',
-      speak: 'Wo sind mehr ' + ITEM_NAMES[item][1] + '? Links, rechts, oder sind es gleich viele?',
+      question: 'Wo sind mehr ' + COUNT_ITEM_NAMES[item][1] + '?',
+      speak: 'Wo sind mehr ' + COUNT_ITEM_NAMES[item][1] + '? Links, rechts, oder sind es gleich viele?',
       correct: correct, options: ['links', 'rechts', 'gleich'],
       labels: { links: 'Links', rechts: 'Rechts', gleich: 'Gleich viele' },
       kind: 'word'
@@ -379,7 +420,7 @@
   }
 
   function genHalf() {
-    var n = rnd(3, 50) * 2; // even, 6..100
+    var n = rnd(3, 50) * 2;
     return {
       type: 'half', n: n,
       question: 'Halbiere!',
@@ -413,7 +454,7 @@
       type: 'mul', f: f, n: n,
       question: 'Rechne aus:',
       speak: 'Was ist ' + f + ' mal ' + n + '?',
-      equation: f + ' \u00b7 ' + n + ' = ?',
+      equation: f + ' \u00d7 ' + n + ' = ?',
       correct: f * n,
       options: makeOptions(f * n, 0, 110, [-f, f, -n, n, f + n]),
       kind: 'number'
@@ -467,7 +508,7 @@
       return {
         type: 'mul', f: f, n: n, review: true,
         question: 'Rechne aus:', speak: 'Was ist ' + f + ' mal ' + n + '?',
-        equation: f + ' \u00b7 ' + n + ' = ?', correct: f * n,
+        equation: f + ' \u00d7 ' + n + ' = ?', correct: f * n,
         options: makeOptions(f * n, 0, 110, [-f, f, -n, n]),
         kind: 'number'
       };
@@ -508,13 +549,14 @@
       genSession: genSession, genAdd: genAdd, genSub: genSub, genDouble: genDouble,
       genHalf: genHalf, genMissing: genMissing, genMul: genMul, genCount: genCount,
       genCompare: genCompare, taskFromSignature: taskFromSignature,
-      BUILD_PROJECTS: BUILD_PROJECTS, SESSION_PLANS: SESSION_PLANS
+      HOUSE_STAGES: HOUSE_STAGES, SWORD_TIERS: SWORD_TIERS, ARMOR_TIERS: ARMOR_TIERS,
+      ARMOR_SLOTS: ARMOR_SLOTS, DROP_WEIGHTS: DROP_WEIGHTS, SESSION_PLANS: SESSION_PLANS
     };
     return;
   }
 
   // ---------- Screen management ----------
-  var screens = ['screen-start', 'screen-practice', 'screen-inventory', 'screen-parent', 'screen-worldmap', 'screen-build', 'screen-creative'];
+  var screens = ['screen-start', 'screen-practice', 'screen-home', 'screen-forge', 'screen-worldmap', 'screen-parent'];
   function show(id) {
     screens.forEach(function (s) { $(s).classList.toggle('active', s === id); });
     var block = (id === 'screen-practice')
@@ -524,6 +566,87 @@
     window.scrollTo(0, 0);
   }
   function showOverlay(id, on) { $(id).classList.toggle('active', on); }
+
+  // ---------- Effects: particles, shake, damage popup ----------
+  function burst(x, y, srcs, count) {
+    for (var i = 0; i < count; i++) {
+      (function () {
+        var p = img(pick(srcs), 'particle');
+        p.style.left = (x - 12) + 'px';
+        p.style.top = (y - 12) + 'px';
+        document.body.appendChild(p);
+        var ang = Math.random() * Math.PI * 2;
+        var dist = 50 + Math.random() * 90;
+        var dx = Math.cos(ang) * dist;
+        var dy = Math.sin(ang) * dist - 40;
+        requestAnimationFrame(function () {
+          p.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(' + (Math.random() * 360 - 180) + 'deg) scale(0.3)';
+          p.style.opacity = '0';
+        });
+        setTimeout(function () { if (p.parentNode) p.parentNode.removeChild(p); }, 800);
+      })();
+    }
+  }
+
+  function shakeScreen() {
+    document.body.classList.remove('shake');
+    void document.body.offsetWidth;
+    document.body.classList.add('shake');
+    setTimeout(function () { document.body.classList.remove('shake'); }, 350);
+  }
+
+  function dmgPopup(targetEl, text) {
+    try {
+      var r = targetEl.getBoundingClientRect();
+      var d = el('div', 'dmg-pop', text);
+      d.style.left = (r.left + r.width / 2 - 30) + 'px';
+      d.style.top = (r.top + 10) + 'px';
+      document.body.appendChild(d);
+      requestAnimationFrame(function () {
+        d.style.transform = 'translateY(-70px) scale(1.3)';
+        d.style.opacity = '0';
+      });
+      setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 900);
+    } catch (e) {}
+  }
+
+  function flyTo(fromEl, targetEl, src) {
+    try {
+      var from = fromEl.getBoundingClientRect();
+      var to = targetEl.getBoundingClientRect();
+      var fly = img(src, 'fly-block');
+      fly.style.left = (from.left + from.width / 2 - 20) + 'px';
+      fly.style.top = (from.top + from.height / 2 - 20) + 'px';
+      document.body.appendChild(fly);
+      var dx = (to.left + to.width / 2) - (from.left + from.width / 2);
+      var dy = (to.top + to.height / 2) - (from.top + from.height / 2);
+      requestAnimationFrame(function () {
+        fly.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(0.45)';
+        fly.style.opacity = '0.25';
+      });
+      setTimeout(function () { if (fly.parentNode) fly.parentNode.removeChild(fly); }, 750);
+    } catch (e) {}
+  }
+
+  // ---------- Resource bar ----------
+  function renderResBar(containerId, withFlyIds) {
+    var c = $(containerId);
+    clear(c);
+    RES_KEYS.forEach(function (k) {
+      var chip = el('div', 'res-chip');
+      var ic = img(RES[k].src);
+      if (withFlyIds) ic.id = 'fly-target-' + k;
+      chip.appendChild(ic);
+      chip.appendChild(el('span', 'res-count', String(state.res[k] || 0)));
+      chip.title = RES[k].name;
+      c.appendChild(chip);
+    });
+  }
+  function refreshAllResBars() {
+    ['res-start', 'res-practice', 'res-home', 'res-forge'].forEach(function (id) {
+      if ($(id) && $(id).offsetParent !== null) renderResBar(id, id === 'res-practice');
+    });
+  }
 
   // ---------- Speech ----------
   function speak(text) {
@@ -545,13 +668,10 @@
       index: 0,
       phase: 'tasks',
       boss: BOSSES[state.stats.sessions % BOSSES.length],
-      bossHp: BOSS_HP,
+      bossHp: 0,
       bossDefeated: false,
-      halfHearts: 10,
-      earnedBlocks: {},
-      earnedItems: {},
-      earnedVorrat: 0,
-      earnedFree: 0,
+      halfHearts: totalHearts() * 2,
+      earnedRes: {},
       xpGained: 0,
       streak: 0,
       pendingLevelUp: null,
@@ -559,49 +679,52 @@
       locked: false
     };
     show('screen-practice');
+    renderResBar('res-practice', true);
     renderHUD();
     renderTask();
   }
 
-  function genBossTasks(n) {
-    var arr = [], diff = state.difficulty;
-    for (var i = 0; i < n; i++) arr.push(Math.random() < 0.5 ? genAdd(diff) : genSub(diff));
-    return arr;
-  }
-
   function startBoss() {
     session.phase = 'boss';
-    session.tasks = genBossTasks(BOSS_HP);
+    session.bossHp = bossMaxHp();
+    session.bossMax = session.bossHp;
+    session.tasks = [genBossTask()];
     session.index = 0;
-    session.bossHp = BOSS_HP;
     renderTask();
+  }
+
+  function genBossTask() {
+    var diff = state.difficulty;
+    return Math.random() < 0.5 ? genAdd(diff) : genSub(diff);
   }
 
   function currentTask() { return session.tasks[session.index]; }
 
-  // ---------- Block economy ----------
-  // Every correct answer: +1 Vorrat block (capped at remaining blueprint) and +1 free block.
-  function earnBlocks() {
-    var p = currentProject();
-    var remaining = p.total - (state.build.placed + state.build.vorrat);
-    var earnedKey = null;
-    if (remaining > 0) {
-      var idx = state.build.placed + state.build.vorrat;
-      earnedKey = p.order[idx].key;
-      state.build.vorrat++;
-      session.earnedVorrat++;
-      session.earnedBlocks[earnedKey] = (session.earnedBlocks[earnedKey] || 0) + 1;
+  // ---------- Resource drops ----------
+  function rollResource(firstTry) {
+    if (!firstTry) return pick(['holz', 'stein']);
+    var w = DROP_WEIGHTS[state.difficulty] || DROP_WEIGHTS.leicht;
+    var total = 0, k;
+    for (k in w) total += w[k];
+    var r = Math.random() * total;
+    for (k in w) {
+      r -= w[k];
+      if (r <= 0) return k;
     }
-    state.build.free++;
-    session.earnedFree++;
-    return earnedKey;
+    return 'holz';
+  }
+
+  function earnResource(key, amount) {
+    state.res[key] = (state.res[key] || 0) + amount;
+    session.earnedRes[key] = (session.earnedRes[key] || 0) + amount;
   }
 
   // ---------- HUD ----------
   function renderHUD() {
     var hearts = $('hud-hearts');
     clear(hearts);
-    for (var i = 0; i < 5; i++) {
+    var max = totalHearts();
+    for (var i = 0; i < max; i++) {
       var slot = el('div', 'heart-slot');
       slot.appendChild(img(ASSETS.ui.heartBg));
       var hh = session.halfHearts - i * 2;
@@ -613,15 +736,7 @@
       ? 'Boss-Kampf!'
       : 'Aufgabe ' + (session.index + 1) + ' / ' + session.tasks.length;
     $('hud-streak').textContent = session.streak >= 2 ? 'Serie: ' + session.streak : '';
-    renderBuildCounter();
     renderXpBar();
-  }
-
-  function renderBuildCounter() {
-    var p = currentProject();
-    var txt = p.name + ': ' + state.build.placed + ' / ' + p.total;
-    if (state.build.vorrat > 0) txt += '  \u00b7  Vorrat: ' + state.build.vorrat;
-    $('hud-build').textContent = txt;
   }
 
   function renderXpBar() {
@@ -633,7 +748,7 @@
   // ---------- Task rendering ----------
   function renderItemRow(container, item, n, fadedFrom) {
     for (var i = 0; i < n; i++) {
-      var im = img(ASSETS.items[item]);
+      var im = img(COUNT_ITEM_SRC[item]);
       if (fadedFrom !== undefined && i >= fadedFrom) im.classList.add('faded');
       container.appendChild(im);
     }
@@ -649,7 +764,8 @@
       bossArea.style.display = 'flex';
       $('boss-img').src = ASSETS.mobs[session.boss.id];
       $('boss-name').textContent = session.boss.name;
-      renderBossHearts();
+      $('boss-dmg-label').textContent = 'Dein Schwert: ' + swordDamage() + ' Schaden';
+      renderBossHp();
     } else {
       bossArea.style.display = 'none';
     }
@@ -732,39 +848,41 @@
       if (session.firstTry && session.streak > 0 && session.streak % STREAK_BONUS_EVERY === 0) {
         bonus = STREAK_BONUS_XP;
         bonusDiamond = true;
-        state.inventory.diamond = (state.inventory.diamond || 0) + 1;
-        session.earnedItems.diamond = (session.earnedItems.diamond || 0) + 1;
+        earnResource('diamant', 1);
       }
       state.xp += xp + bonus;
       session.xpGained += xp + bonus;
       if (levelOf(state.xp) > levelBefore) session.pendingLevelUp = levelOf(state.xp);
 
-      var earnedKey = earnBlocks();
+      var resKey = rollResource(session.firstTry);
+      earnResource(resKey, 1);
       saveState();
-      flyBlock(btn, earnedKey ? ASSETS.blocks[earnedKey] : ASSETS.blocks.planks);
-      renderBuildCounter();
+
+      var target = $('fly-target-' + resKey) || $('hud-progress');
+      flyTo(btn, target, RES[resKey].src);
+      setTimeout(refreshAllResBars, 650);
 
       if (session.phase === 'boss') {
-        session.bossHp--;
-        renderBossHearts();
+        var dmg = swordDamage();
+        session.bossHp = Math.max(0, session.bossHp - dmg);
+        dmgPopup($('boss-img'), '\u2212' + dmg);
+        shakeScreen();
         bossHitAnimation();
+        renderBossHp();
         renderHUD();
+        var r = $('boss-img').getBoundingClientRect();
+        burst(r.left + r.width / 2, r.top + r.height / 2, [RES.eisen.src, RES.gold.src], 6);
         setTimeout(function () {
           if (session.bossHp <= 0) {
-            session.bossDefeated = true;
-            state.xp += BOSS_XP;
-            session.xpGained += BOSS_XP;
-            state.inventory.apple_golden = (state.inventory.apple_golden || 0) + 1;
-            session.earnedItems.apple_golden = (session.earnedItems.apple_golden || 0) + 1;
-            if (levelOf(state.xp) > levelOf(state.xp - BOSS_XP)) session.pendingLevelUp = levelOf(state.xp);
-            saveState();
-            showBossWin();
+            bossDefeated();
           } else {
-            nextTask();
+            session.tasks.push(genBossTask());
+            session.index++;
+            renderTask();
           }
-        }, 900);
+        }, 950);
       } else {
-        setTimeout(function () { showReward(earnedKey, xp + bonus, bonusDiamond); }, 550);
+        setTimeout(function () { showReward(resKey, xp + bonus, bonusDiamond); }, 550);
       }
     } else {
       btn.classList.add('wrong');
@@ -780,32 +898,55 @@
     }
   }
 
-  // ---------- Flying block ----------
-  function flyBlock(fromEl, src) {
-    try {
-      var from = fromEl.getBoundingClientRect();
-      var to = $('hud-build').getBoundingClientRect();
-      var fly = img(src, 'fly-block');
-      fly.style.left = (from.left + from.width / 2 - 20) + 'px';
-      fly.style.top = (from.top + from.height / 2 - 20) + 'px';
-      document.body.appendChild(fly);
-      var dx = (to.left + to.width / 2) - (from.left + from.width / 2);
-      var dy = (to.top + to.height / 2) - (from.top + from.height / 2);
-      requestAnimationFrame(function () {
-        fly.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(0.4)';
-        fly.style.opacity = '0.2';
-      });
-      setTimeout(function () { if (fly.parentNode) fly.parentNode.removeChild(fly); }, 750);
-    } catch (e) {}
+  function bossDefeated() {
+    session.bossDefeated = true;
+    state.stats.bossesDefeated++;
+    var loot = bossLoot();
+    var xpGain = bossXp();
+    state.xp += xpGain;
+    session.xpGained += xpGain;
+    for (var k in loot) earnResource(k, loot[k]);
+    if (levelOf(state.xp) > levelOf(state.xp - xpGain)) session.pendingLevelUp = levelOf(state.xp);
+    saveState();
+
+    // Boss explosion
+    var r = $('boss-img').getBoundingClientRect();
+    burst(r.left + r.width / 2, r.top + r.height / 2,
+      [RES.eisen.src, RES.gold.src, RES.diamant.src, ASSETS.ui.heart], 14);
+    $('boss-img').classList.add('defeated');
+
+    setTimeout(function () {
+      $('boss-img').classList.remove('defeated');
+      $('bosswin-title').textContent = session.boss.name + ' besiegt!';
+      var lootRow = $('bosswin-loot');
+      clear(lootRow);
+      var delay = 0;
+      for (var k in loot) {
+        var li = el('div', 'loot-item');
+        var ic = img(RES[k].src, 'pop');
+        ic.style.animationDelay = delay + 'ms';
+        li.appendChild(ic);
+        li.appendChild(el('div', null, '\u00d7 ' + loot[k]));
+        lootRow.appendChild(li);
+        delay += 150;
+      }
+      $('bosswin-text').textContent = '+' + xpGain + ' XP';
+      renderXpBar();
+      refreshAllResBars();
+      showOverlay('overlay-bosswin', true);
+    }, 1000);
   }
 
-  // ---------- Boss helpers ----------
-  function renderBossHearts() {
-    var c = $('boss-hearts');
-    clear(c);
-    for (var i = 0; i < BOSS_HP; i++) {
-      c.appendChild(img(i < session.bossHp ? ASSETS.ui.heart : ASSETS.ui.heartBg));
-    }
+  $('btn-bosswin-next').addEventListener('click', function () {
+    showOverlay('overlay-bosswin', false);
+    maybeLevelUp(showSummary);
+  });
+
+  // ---------- Boss rendering ----------
+  function renderBossHp() {
+    $('boss-hp-text').textContent = session.bossHp + ' / ' + session.bossMax;
+    var pct = session.bossMax > 0 ? (session.bossHp / session.bossMax) : 0;
+    $('boss-hp-fill').style.width = Math.round(pct * 100) + '%';
   }
 
   function bossHitAnimation() {
@@ -815,26 +956,10 @@
     b.classList.add('hit');
   }
 
-  function showBossWin() {
-    $('bosswin-title').textContent = session.boss.name + ' besiegt!';
-    var item = $('bosswin-item');
-    item.classList.remove('pop');
-    void item.offsetWidth;
-    item.classList.add('pop');
-    $('bosswin-text').textContent = '+1 Goldener Apfel  \u00b7  +' + BOSS_XP + ' XP';
-    renderXpBar();
-    showOverlay('overlay-bosswin', true);
-  }
-
-  $('btn-bosswin-next').addEventListener('click', function () {
-    showOverlay('overlay-bosswin', false);
-    maybeLevelUp(showSummary);
-  });
-
   // ---------- Level-Up chain ----------
   var levelUpNext = null;
   function maybeLevelUp(next) {
-    if (session.pendingLevelUp) {
+    if (session && session.pendingLevelUp) {
       var lvl = session.pendingLevelUp;
       session.pendingLevelUp = null;
       var p = pickaxeForLevel(lvl);
@@ -861,20 +986,14 @@
   });
 
   // ---------- Reward overlay ----------
-  function showReward(blockKey, xp, withDiamond) {
+  function showReward(resKey, xp, withDiamond) {
     var item = $('reward-item');
     item.classList.remove('pop');
-    if (blockKey) {
-      item.src = ASSETS.blocks[blockKey];
-      $('reward-text').textContent = '+1 ' + BLOCK_NAMES[blockKey] + ' f\u00fcr die Baustelle!';
-    } else {
-      item.src = ASSETS.blocks.planks;
-      $('reward-text').textContent = '+1 freier Block!';
-    }
+    item.src = RES[resKey].src;
     void item.offsetWidth;
     item.classList.add('pop');
-    $('reward-xp').textContent = '+' + xp + ' XP  \u00b7  Freie Bl\u00f6cke: ' + state.build.free +
-      (withDiamond ? '  \u00b7  Serien-Bonus: +1 Diamant!' : '');
+    $('reward-text').textContent = '+1 ' + RES[resKey].name + ' geschürft!';
+    $('reward-xp').textContent = '+' + xp + ' XP' + (withDiamond ? '  \u00b7  Serien-Bonus: +1 Diamant!' : '');
     renderXpBar();
     showOverlay('overlay-reward', true);
   }
@@ -886,9 +1005,8 @@
 
   function nextTask() {
     session.index++;
-    if (session.index >= session.tasks.length) {
-      if (session.phase === 'tasks') startBoss();
-      else showSummary();
+    if (session.phase === 'tasks' && session.index >= session.tasks.length) {
+      startBoss();
     } else {
       renderTask();
     }
@@ -904,12 +1022,12 @@
       var grid = el('div', 'count-grid');
       for (var i = 0; i < t.n; i++) {
         var cell = el('div', 'count-cell');
-        cell.appendChild(img(ASSETS.items[t.item]));
+        cell.appendChild(img(COUNT_ITEM_SRC[t.item]));
         cell.appendChild(el('div', null, String(i + 1)));
         grid.appendChild(cell);
       }
       vis.appendChild(grid);
-      txt.textContent = 'Z\u00e4hle langsam mit: Es sind ' + t.n + ' ' + ITEM_NAMES[t.item][t.n === 1 ? 0 : 1] + '.';
+      txt.textContent = 'Z\u00e4hle langsam mit: Es sind ' + t.n + ' ' + COUNT_ITEM_NAMES[t.item][t.n === 1 ? 0 : 1] + '.';
     } else if (t.type === 'add' || t.type === 'double') {
       if (t.a <= 10 && t.b <= 10) {
         var gA = el('div', 'group'); renderItemRow(gA, t.item, t.a);
@@ -944,7 +1062,7 @@
     } else if (t.type === 'missing') {
       txt.textContent = 'Von ' + t.a + ' bis ' + t.c + ' fehlen ' + (t.c - t.a) + '. Also: ' + t.a + ' + ' + (t.c - t.a) + ' = ' + t.c + '.';
     } else if (t.type === 'mul') {
-      txt.textContent = t.f + ' \u00b7 ' + t.n + ' bedeutet ' + t.n + ' mal die ' + t.f + ': das ergibt ' + (t.f * t.n) + '.';
+      txt.textContent = t.f + ' \u00d7 ' + t.n + ' bedeutet ' + t.n + ' mal die ' + t.f + ': das ergibt ' + (t.f * t.n) + '.';
     } else if (t.type === 'half') {
       txt.textContent = t.n + ' in zwei gleiche Teile: ' + (t.n / 2) + ' und ' + (t.n / 2) + '. Die H\u00e4lfte ist ' + (t.n / 2) + '.';
     } else if (t.type === 'compare') {
@@ -981,25 +1099,41 @@
     var items = $('summary-items');
     clear(items);
     var any = false;
-    Object.keys(session.earnedBlocks).forEach(function (k) {
-      any = true;
-      var s = el('div', 'summary-item');
-      s.appendChild(img(ASSETS.blocks[k]));
-      s.appendChild(el('div', null, '\u00d7 ' + session.earnedBlocks[k]));
-      items.appendChild(s);
+    RES_KEYS.forEach(function (k) {
+      if (session.earnedRes[k]) {
+        any = true;
+        var s = el('div', 'summary-item');
+        s.appendChild(img(RES[k].src));
+        s.appendChild(el('div', null, '\u00d7 ' + session.earnedRes[k]));
+        items.appendChild(s);
+      }
     });
-    Object.keys(session.earnedItems).forEach(function (k) {
-      any = true;
-      var s = el('div', 'summary-item');
-      s.appendChild(img(ASSETS.items[k]));
-      s.appendChild(el('div', null, '\u00d7 ' + session.earnedItems[k]));
-      items.appendChild(s);
-    });
-    if (!any) items.appendChild(el('div', null, 'Diesmal nichts gesammelt — gleich nochmal!'));
+    if (!any) items.appendChild(el('div', null, 'Diesmal nichts geschürft — gleich nochmal!'));
 
     $('summary-title').textContent = session.bossDefeated ? session.boss.name + ' besiegt!' : 'Geschafft!';
-    $('summary-stats').textContent = '+' + session.xpGained + ' XP  \u00b7  Level ' + levelOf(state.xp) +
-      '  \u00b7  +' + session.earnedFree + ' freie Bl\u00f6cke';
+    $('summary-stats').textContent = '+' + session.xpGained + ' XP  \u00b7  Level ' + levelOf(state.xp);
+
+    // Hint: what can be crafted/upgraded now?
+    var hint = '';
+    var ns = nextSwordTier();
+    if (ns !== null && canAfford(SWORD_TIERS[ns].cost)) hint = 'In der Schmiede wartet: ' + SWORD_TIERS[ns].name + '!';
+    else {
+      var st = HOUSE_STAGES[state.house]; // next stage (index = stage since stages are 1-based)
+      if (st && canAfford(st.cost)) hint = 'Dein Zuhause kann ausgebaut werden: ' + st.name + '!';
+      else {
+        for (var i = 0; i < ARMOR_SLOTS.length; i++) {
+          var sl = ARMOR_SLOTS[i];
+          var nt = state.equip[sl.id] + 1;
+          if (nt < ARMOR_TIERS.length) {
+            var cost = {};
+            cost[ARMOR_TIERS[nt].res] = ARMOR_TIERS[nt].costs[sl.id];
+            if (canAfford(cost)) { hint = 'In der Schmiede wartet: ' + ARMOR_TIERS[nt].name + '-' + sl.name + '!'; break; }
+          }
+        }
+      }
+    }
+    $('summary-hint').textContent = hint;
+
     showOverlay('overlay-summary', true);
   }
 
@@ -1007,181 +1141,275 @@
     showOverlay('overlay-summary', false);
     startSession();
   });
+  $('btn-summary-forge').addEventListener('click', function () {
+    showOverlay('overlay-summary', false);
+    renderForge();
+    show('screen-forge');
+  });
   $('btn-summary-home').addEventListener('click', function () {
+    showOverlay('overlay-summary', false);
+    renderHome();
+    show('screen-home');
+  });
+  $('btn-summary-start').addEventListener('click', function () {
     showOverlay('overlay-summary', false);
     renderStart();
     show('screen-start');
-  });
-  $('btn-summary-build').addEventListener('click', function () {
-    showOverlay('overlay-summary', false);
-    renderBuildScreen();
-    show('screen-build');
   });
 
   // ---------- Vorlesen ----------
   $('btn-speak').addEventListener('click', function () { speak(currentTask().speak); });
 
-  // ---------- Baustelle ----------
-  function renderBlueprint(container, project, placed, popFrom, cellSize) {
+  // ---------- Blueprint rendering ----------
+  function renderBlueprint(container, stage, cellSize, animate) {
     clear(container);
-    container.style.gridTemplateColumns = 'repeat(' + project.rows[0].length + ', ' + cellSize + 'px)';
-    var placedSet = {};
-    for (var i = 0; i < placed && i < project.order.length; i++) {
-      var o = project.order[i];
-      placedSet[o.r + ':' + o.c] = { key: o.key, idx: i };
-    }
-    for (var r = 0; r < project.rows.length; r++) {
-      for (var c = 0; c < project.rows[r].length; c++) {
-        var ch = project.rows[r][c];
+    var cols = stage.rows[0].length;
+    container.style.gridTemplateColumns = 'repeat(' + cols + ', ' + cellSize + 'px)';
+    var idxMap = {};
+    stage.order.forEach(function (o, i) { idxMap[o.r + ':' + o.c] = i; });
+    for (var r = 0; r < stage.rows.length; r++) {
+      for (var c = 0; c < stage.rows[r].length; c++) {
+        var ch = stage.rows[r][c];
         var cell = el('div', 'build-cell');
         cell.style.width = cellSize + 'px';
         cell.style.height = cellSize + 'px';
         if (ch === '.') {
           cell.classList.add('air');
         } else {
-          var info = placedSet[r + ':' + c];
-          if (info) {
-            var im = img(ASSETS.blocks[info.key]);
-            if (info.idx >= popFrom) im.classList.add('placed-pop');
-            cell.appendChild(im);
-          } else {
-            cell.classList.add('empty');
+          var im = img(ASSETS.blocks[stage.map[ch]]);
+          if (animate) {
+            im.classList.add('placed-pop');
+            im.style.animationDelay = (idxMap[r + ':' + c] * 35) + 'ms';
           }
+          cell.appendChild(im);
         }
         container.appendChild(cell);
       }
     }
   }
 
-  function renderBuildScreen() {
-    var p = currentProject();
-    $('build-title').textContent = p.name;
-    $('build-progress').textContent = state.build.placed + ' / ' + p.total + ' Bl\u00f6cke  \u00b7  Vorrat: ' + state.build.vorrat + '  \u00b7  Freie Bl\u00f6cke: ' + state.build.free;
-    renderBlueprint($('build-grid'), p, state.build.placed, state.build.seen, 44);
-    state.build.seen = state.build.placed;
-    saveState();
+  function blueprintCellSize(stage, maxWidth) {
+    return Math.min(44, Math.floor(maxWidth / stage.rows[0].length));
+  }
 
-    var placeBtn = $('btn-build-place');
-    placeBtn.disabled = (state.build.vorrat <= 0 || state.build.placed >= p.total);
-    $('build-hint').textContent = (state.build.vorrat <= 0 && state.build.placed < p.total)
-      ? 'L\u00f6se Aufgaben, um Bl\u00f6cke f\u00fcr den Vorrat zu sammeln!'
-      : '';
+  // ---------- Mein Zuhause ----------
+  function renderHome(animate) {
+    renderResBar('res-home');
+    var stage = HOUSE_STAGES[state.house - 1];
+    $('home-title').textContent = 'Stufe ' + state.house + ': ' + stage.name;
+    $('home-effect').textContent = stage.effect ? 'Bonus: ' + stage.effect : '';
+    var maxW = Math.min(560, window.innerWidth * 0.84);
+    renderBlueprint($('home-grid'), stage, blueprintCellSize(stage, maxW), animate);
 
-    var done = $('builds-done');
-    clear(done);
-    if (state.build.completed.length) {
-      done.appendChild(el('div', 'builds-done-title', 'Fertige Bauwerke:'));
-      var row = el('div', 'builds-done-row');
-      state.build.completed.forEach(function (id) {
-        for (var i = 0; i < BUILD_PROJECTS.length; i++) {
-          if (BUILD_PROJECTS[i].id === id) {
-            var b = el('div', 'builds-done-item');
-            b.appendChild(img(ASSETS.blocks[BUILD_PROJECTS[i].order[0].key]));
-            b.appendChild(el('div', null, BUILD_PROJECTS[i].name));
-            row.appendChild(b);
-          }
-        }
-      });
-      done.appendChild(row);
+    var next = HOUSE_STAGES[state.house]; // 1-based stage -> index of next
+    if (next) {
+      $('home-next-panel').style.display = 'flex';
+      $('home-max').style.display = 'none';
+      $('home-next-name').textContent = 'N\u00e4chste Stufe: ' + next.name + (next.effect ? '  (' + next.effect + ')' : '');
+      renderCostRow($('home-next-cost'), next.cost);
+      $('btn-home-upgrade').disabled = !canAfford(next.cost);
+    } else {
+      $('home-next-panel').style.display = 'none';
+      $('home-max').style.display = 'block';
     }
   }
 
-  $('btn-build-place').addEventListener('click', function () {
-    var p = currentProject();
-    if (state.build.vorrat <= 0 || state.build.placed >= p.total) return;
-    state.build.vorrat--;
-    state.build.placed++;
-    saveState();
-
-    if (state.build.placed >= p.total) {
-      // Celebration, then advance to the next project
-      renderBlueprint($('build-grid'), p, p.total, p.total - 1, 44);
-      $('build-progress').textContent = p.total + ' / ' + p.total + ' Bl\u00f6cke';
-      $('builddone-title').textContent = p.name + ' fertig!';
-      renderBlueprint($('builddone-grid'), p, p.total, p.total, 26);
-      state.build.completed.push(p.id);
-      state.build.projectIndex++;
-      state.build.placed = 0;
-      state.build.seen = 0;
-      saveState();
-      $('builddone-text').textContent = 'Gro\u00dfartig gebaut! N\u00e4chstes Projekt: ' + currentProject().name;
-      setTimeout(function () { showOverlay('overlay-builddone', true); }, 600);
-    } else {
-      renderBlueprint($('build-grid'), p, state.build.placed, state.build.placed - 1, 44);
-      state.build.seen = state.build.placed;
-      $('build-progress').textContent = state.build.placed + ' / ' + p.total + ' Bl\u00f6cke  \u00b7  Vorrat: ' + state.build.vorrat + '  \u00b7  Freie Bl\u00f6cke: ' + state.build.free;
-      $('btn-build-place').disabled = (state.build.vorrat <= 0);
-      $('build-hint').textContent = (state.build.vorrat <= 0) ? 'L\u00f6se Aufgaben, um Bl\u00f6cke f\u00fcr den Vorrat zu sammeln!' : '';
+  function renderCostRow(container, cost) {
+    clear(container);
+    for (var k in cost) {
+      var chip = el('div', 'res-chip cost-chip' + ((state.res[k] || 0) >= cost[k] ? ' ok' : ' missing'));
+      chip.appendChild(img(RES[k].src));
+      chip.appendChild(el('span', 'res-count', cost[k] + ' / ' + (state.res[k] || 0)));
+      container.appendChild(chip);
     }
-  });
-
-  $('btn-builddone-next').addEventListener('click', function () {
-    showOverlay('overlay-builddone', false);
-    renderBuildScreen();
-  });
-
-  $('btn-build-creative').addEventListener('click', function () {
-    renderCreative();
-    show('screen-creative');
-  });
-
-  $('btn-build-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
-
-  // ---------- Kreativ-Modus ----------
-  function renderCreative() {
-    $('creative-free').textContent = 'Freie Bl\u00f6cke: ' + state.build.free;
-
-    var pal = $('creative-palette');
-    clear(pal);
-    CREATIVE_PALETTE.forEach(function (key) {
-      var tile = el('button', 'palette-tile' + (state.creative.sel === key ? ' selected' : ''));
-      tile.appendChild(img(ASSETS.blocks[key]));
-      tile.title = BLOCK_NAMES[key];
-      tile.addEventListener('click', function () {
-        state.creative.sel = key;
-        saveState();
-        renderCreative();
-      });
-      pal.appendChild(tile);
-    });
-
-    var grid = $('creative-grid');
-    clear(grid);
-    grid.style.gridTemplateColumns = 'repeat(' + CREATIVE_COLS + ', 40px)';
-    state.creative.grid.forEach(function (key, idx) {
-      var cell = el('div', 'creative-cell');
-      if (key) cell.appendChild(img(ASSETS.blocks[key]));
-      cell.addEventListener('click', function () { onCreativeCell(idx); });
-      grid.appendChild(cell);
-    });
   }
 
-  function onCreativeCell(idx) {
-    var cur = state.creative.grid[idx];
-    if (cur) {
-      state.creative.grid[idx] = null;
-      state.build.free++;
-    } else {
-      if (state.build.free <= 0) {
-        $('creative-free').textContent = 'Keine freien Bl\u00f6cke — l\u00f6se Aufgaben!';
-        return;
+  $('btn-home-upgrade').addEventListener('click', function () {
+    var next = HOUSE_STAGES[state.house];
+    if (!next || !canAfford(next.cost)) return;
+    payCost(next.cost);
+    state.house++;
+    saveState();
+
+    var r = $('home-grid').getBoundingClientRect();
+    burst(r.left + r.width / 2, r.top + r.height / 2,
+      [ASSETS.blocks.planks, ASSETS.blocks.stone, RES.gold.src], 12);
+    shakeScreen();
+    renderHome(true);
+
+    var stage = HOUSE_STAGES[state.house - 1];
+    setTimeout(function () {
+      $('upgrade-title').textContent = stage.name + ' gebaut!';
+      $('upgrade-text').textContent = stage.effect ? 'Neuer Bonus: ' + stage.effect : 'Dein Zuhause ist gewachsen!';
+      showOverlay('overlay-upgrade', true);
+    }, stage.total * 35 + 500);
+  });
+
+  $('btn-upgrade-next').addEventListener('click', function () {
+    showOverlay('overlay-upgrade', false);
+    renderHome();
+  });
+
+  $('btn-home-forge').addEventListener('click', function () { renderForge(); show('screen-forge'); });
+  $('btn-home-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
+
+  // ---------- Schmiede ----------
+  function nextSwordTier() {
+    var n = state.equip.schwert + 1;
+    return n < SWORD_TIERS.length ? n : null;
+  }
+
+  function renderForge() {
+    renderResBar('res-forge');
+
+    // Character preview
+    var ch = $('forge-character');
+    clear(ch);
+    ch.appendChild(img(ASSETS.mobs.steve, 'forge-avatar'));
+    var equipRow = el('div', 'forge-equip-row');
+    var sw = state.equip.schwert;
+    equipRow.appendChild(equipIcon(sw >= 0 ? SWORD_TIERS[sw].src : null, 'Schwert'));
+    ARMOR_SLOTS.forEach(function (sl) {
+      var t = state.equip[sl.id];
+      equipRow.appendChild(equipIcon(t >= 0 ? armorSrc(t, sl) : null, sl.name));
+    });
+    ch.appendChild(equipRow);
+    $('forge-stats').textContent = 'Schaden: ' + swordDamage() + '  \u00b7  Herzen: ' + totalHearts();
+
+    // Crafting rows
+    var rows = $('forge-rows');
+    clear(rows);
+
+    // Sword row
+    var ns = nextSwordTier();
+    rows.appendChild(forgeRow(
+      'Schwert',
+      sw >= 0 ? SWORD_TIERS[sw].src : null,
+      ns !== null ? SWORD_TIERS[ns].name : null,
+      ns !== null ? SWORD_TIERS[ns].src : null,
+      ns !== null ? SWORD_TIERS[ns].cost : null,
+      function () { craftSword(); }
+    ));
+
+    // Armor rows
+    ARMOR_SLOTS.forEach(function (sl) {
+      var t = state.equip[sl.id];
+      var nt = t + 1;
+      var hasNext = nt < ARMOR_TIERS.length;
+      var cost = null;
+      if (hasNext) {
+        cost = {};
+        cost[ARMOR_TIERS[nt].res] = ARMOR_TIERS[nt].costs[sl.id];
       }
-      state.creative.grid[idx] = state.creative.sel;
-      state.build.free--;
-    }
-    saveState();
-    renderCreative();
+      rows.appendChild(forgeRow(
+        sl.name,
+        t >= 0 ? armorSrc(t, sl) : null,
+        hasNext ? ARMOR_TIERS[nt].name + '-' + sl.name : null,
+        hasNext ? armorSrc(nt, sl) : null,
+        cost,
+        function () { craftArmor(sl.id); }
+      ));
+    });
   }
 
-  $('btn-creative-back').addEventListener('click', function () { renderBuildScreen(); show('screen-build'); });
+  function equipIcon(src, label) {
+    var w = el('div', 'equip-slot');
+    if (src) w.appendChild(img(src));
+    else w.appendChild(el('div', 'equip-empty', '?'));
+    w.title = label;
+    return w;
+  }
+
+  function forgeRow(label, currentSrc, nextName, nextSrc, cost, onCraft) {
+    var row = el('div', 'forge-row');
+
+    var cur = el('div', 'forge-cur');
+    cur.appendChild(el('div', 'forge-label', label));
+    cur.appendChild(currentSrc ? img(currentSrc) : el('div', 'equip-empty', '\u2014'));
+    row.appendChild(cur);
+
+    if (nextSrc) {
+      row.appendChild(el('div', 'forge-arrow', '\u2192'));
+      var nxt = el('div', 'forge-next');
+      nxt.appendChild(img(nextSrc));
+      nxt.appendChild(el('div', 'forge-next-name', nextName));
+      row.appendChild(nxt);
+      var costEl = el('div', 'forge-cost');
+      renderCostRow(costEl, cost);
+      row.appendChild(costEl);
+      var btn = el('button', 'mc-btn small forge-btn');
+      btn.appendChild(el('span', null, 'Schmieden'));
+      btn.disabled = !canAfford(cost);
+      btn.addEventListener('click', onCraft);
+      row.appendChild(btn);
+    } else {
+      row.appendChild(el('div', 'forge-maxed', 'Meisterst\u00fcck!'));
+    }
+    return row;
+  }
+
+  function craftSword() {
+    var ns = nextSwordTier();
+    if (ns === null || !canAfford(SWORD_TIERS[ns].cost)) return;
+    payCost(SWORD_TIERS[ns].cost);
+    state.equip.schwert = ns;
+    saveState();
+    craftCelebrate(SWORD_TIERS[ns].src, SWORD_TIERS[ns].name, 'Schaden: ' + swordDamage());
+  }
+
+  function craftArmor(slotId) {
+    var sl = null;
+    for (var i = 0; i < ARMOR_SLOTS.length; i++) if (ARMOR_SLOTS[i].id === slotId) sl = ARMOR_SLOTS[i];
+    var nt = state.equip[slotId] + 1;
+    if (nt >= ARMOR_TIERS.length) return;
+    var cost = {};
+    cost[ARMOR_TIERS[nt].res] = ARMOR_TIERS[nt].costs[slotId];
+    if (!canAfford(cost)) return;
+    payCost(cost);
+    state.equip[slotId] = nt;
+    saveState();
+    craftCelebrate(armorSrc(nt, sl), ARMOR_TIERS[nt].name + '-' + sl.name, 'Herzen: ' + totalHearts());
+  }
+
+  function craftCelebrate(src, name, effectText) {
+    var item = $('craft-item');
+    item.src = src;
+    item.classList.remove('pop');
+    void item.offsetWidth;
+    item.classList.add('pop');
+    $('craft-title').textContent = 'Geschmiedet!';
+    $('craft-text').textContent = name + '  \u00b7  ' + effectText;
+    var r = document.body.getBoundingClientRect();
+    burst(window.innerWidth / 2, window.innerHeight / 2, [src, RES.eisen.src, RES.gold.src], 12);
+    shakeScreen();
+    showOverlay('overlay-craft', true);
+  }
+
+  $('btn-craft-next').addEventListener('click', function () {
+    showOverlay('overlay-craft', false);
+    renderForge();
+  });
+
+  $('btn-forge-home').addEventListener('click', function () { renderHome(); show('screen-home'); });
+  $('btn-forge-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
 
   // ---------- Start screen ----------
   function renderStart() {
     var lvl = levelOf(state.xp);
-    $('start-level').textContent = 'Level ' + lvl + '  \u00b7  ' + state.xp + ' XP';
+    $('start-level').textContent = 'Level ' + lvl + '  \u00b7  ' + state.xp + ' XP  \u00b7  ' + totalHearts() + ' Herzen';
     $('start-pickaxe').src = pickaxeForLevel(lvl).src;
+    renderResBar('res-start');
+
+    var eq = $('start-equip');
+    clear(eq);
+    var sw = state.equip.schwert;
+    if (sw >= 0) eq.appendChild(img(SWORD_TIERS[sw].src));
+    ARMOR_SLOTS.forEach(function (sl) {
+      var t = state.equip[sl.id];
+      if (t >= 0) eq.appendChild(img(armorSrc(t, sl)));
+    });
+
     renderGroundStrip();
-    renderHotbar();
   }
 
   function renderGroundStrip() {
@@ -1197,29 +1425,10 @@
     resizeTimer = setTimeout(renderGroundStrip, 150);
   });
 
-  var INV_ORDER = ['diamond', 'emerald', 'gold_ingot', 'iron_ingot', 'apple', 'apple_golden'];
-
-  function renderHotbar() {
-    var bar = $('hotbar');
-    clear(bar);
-    var shown = 0;
-    INV_ORDER.forEach(function (id) {
-      if (shown >= 9) return;
-      var count = state.inventory[id] || 0;
-      if (count > 0) {
-        var slot = el('div', 'inv-slot');
-        slot.appendChild(img(ASSETS.items[id]));
-        slot.appendChild(el('div', 'count', String(count)));
-        bar.appendChild(slot);
-        shown++;
-      }
-    });
-  }
-
   $('btn-start-game').addEventListener('click', startSession);
-  $('btn-start-build').addEventListener('click', function () { renderBuildScreen(); show('screen-build'); });
+  $('btn-start-home').addEventListener('click', function () { renderHome(); show('screen-home'); });
+  $('btn-start-forge').addEventListener('click', function () { renderForge(); show('screen-forge'); });
   $('btn-start-world').addEventListener('click', function () { renderWorldMap(); show('screen-worldmap'); });
-  $('btn-start-inventory').addEventListener('click', function () { renderInventory(); show('screen-inventory'); });
   $('btn-start-parent').addEventListener('click', function () { resetGate(); show('screen-parent'); });
 
   // ---------- World map ----------
@@ -1252,26 +1461,6 @@
   }
 
   $('btn-world-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
-
-  // ---------- Inventory ----------
-  function renderInventory() {
-    var grid = $('inv-grid');
-    clear(grid);
-    var any = false;
-    INV_ORDER.forEach(function (id) {
-      var slot = el('div', 'inv-slot');
-      var count = state.inventory[id] || 0;
-      if (count > 0) {
-        any = true;
-        slot.appendChild(img(ASSETS.items[id]));
-        slot.appendChild(el('div', 'count', String(count)));
-      }
-      grid.appendChild(slot);
-    });
-    $('inv-hint').style.display = any ? 'none' : 'block';
-  }
-
-  $('btn-inv-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
 
   // ---------- Parent area ----------
   var gateTimer = null;
@@ -1323,8 +1512,10 @@
       'Beantwortete Aufgaben: ' + s.answered,
       'Richtig: ' + s.correct + ' (' + acc + ' %)',
       'Gespielte Runden: ' + s.sessions,
+      'Besiegte Bosse: ' + s.bossesDefeated,
       'Beste Serie: ' + s.bestStreak,
-      'XP gesamt: ' + state.xp + '  \u00b7  Level ' + levelOf(state.xp)
+      'XP gesamt: ' + state.xp + '  \u00b7  Level ' + levelOf(state.xp),
+      'Haus-Stufe: ' + state.house + ' von ' + HOUSE_STAGES.length
     ];
     var weakest = null, weakestAcc = 101;
     Object.keys(s.byType).forEach(function (t) {
@@ -1365,7 +1556,6 @@
   $('btn-parent-reset').addEventListener('click', function () {
     if (window.confirm('Wirklich den gesamten Fortschritt l\u00f6schen?')) {
       state = defaultState();
-      state.creative.grid = new Array(CREATIVE_COLS * CREATIVE_ROWS).fill(null);
       saveState();
       openParent();
     }
