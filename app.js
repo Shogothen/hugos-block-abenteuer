@@ -832,7 +832,7 @@
 
   // Robust audio unlock: revive the context on every interaction (iOS suspends it)
   ['pointerdown', 'touchend', 'mousedown', 'keydown'].forEach(function (ev) {
-    document.addEventListener(ev, function () { Sound.unlock(); unlockVoice(); }, { passive: true });
+    document.addEventListener(ev, function () { Sound.unlock(); unlockVoice(); tryStartIntro(); }, { passive: true });
   });
 
   // UI click sound via delegation (answers play their own feedback sounds)
@@ -909,6 +909,36 @@
       }
     } catch (e) {}
   }
+  // ---------- Intro-Song (nur Startbildschirm, einmal pro Besuch) ----------
+  var introAudio = null;
+  var introPlayed = false;
+  var introFadeTimer = null;
+  function tryStartIntro() {
+    if (introPlayed) return;
+    if (!$('screen-start').classList.contains('active')) return;
+    introPlayed = true;
+    try {
+      introAudio = new Audio(AUDIO_BASE + 'intro.mp3');
+      introAudio.volume = 0.6;
+      introAudio.onended = function () { introAudio = null; };
+      var p = introAudio.play();
+      if (p && p.catch) p.catch(function () { introAudio = null; });
+    } catch (e) { introAudio = null; }
+  }
+  function stopIntro() {
+    if (!introAudio) return;
+    var a = introAudio;
+    introAudio = null;
+    clearInterval(introFadeTimer);
+    introFadeTimer = setInterval(function () {
+      a.volume = Math.max(0, a.volume - 0.08);
+      if (a.volume <= 0.01) {
+        clearInterval(introFadeTimer);
+        try { a.pause(); } catch (e) {}
+      }
+    }, 90);
+  }
+
   function stopVoiceClip() {
     try { if (voiceAudio && !voiceAudio.paused) voiceAudio.pause(); } catch (e) {}
   }
@@ -951,6 +981,7 @@
   var screens = ['screen-start', 'screen-practice', 'screen-home', 'screen-forge',
     'screen-pets', 'screen-trophies', 'screen-worldmap', 'screen-parent'];
   function show(id) {
+    if (id !== 'screen-start') stopIntro();
     screens.forEach(function (s) { $(s).classList.toggle('active', s === id); });
     var block = (id === 'screen-practice')
       ? ASSETS.blocks[biomeById(state.biome).blockKey]
