@@ -746,3 +746,117 @@ body.shake { animation: screen-shake 0.35s ease; }
   45% { transform: translateX(5px); }
   70% { transform: translateX(-3px); }
 }
+
+/* ---------- v7.5: Panorama ---------- */
+.panorama {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  height: 200px;
+  overflow: hidden;
+  border: 4px solid #000;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.08), 0 6px 0 rgba(0,0,0,0.35);
+  margin-bottom: 10px;
+  flex: 0 0 auto;
+}
+.panorama.pan-small { height: 150px; }
+.panorama * { pointer-events: none; }
+
+.pan-sky { position: absolute; inset: 0; }
+.pan-evening .pan-sky { background: linear-gradient(#ffb36b 0%, #e58fb0 34%, #9d6fc9 62%, #5d4a96 100%); }
+.pan-morning .pan-sky { background: linear-gradient(#ffd9a0 0%, #ffe9c4 30%, #a8d8ef 70%, #7fb6e0 100%); }
+.pan-day .pan-sky { background: linear-gradient(#8fd0f5 0%, #a9ddf8 55%, #c6ecff 100%); }
+
+.pan-sun {
+  position: absolute;
+  width: 26px; height: 26px;
+  top: 22px; left: 68%;
+  filter: drop-shadow(0 0 10px rgba(255,210,110,0.9)) saturate(1.4);
+  animation: sun-glow 3.5s ease-in-out infinite;
+}
+@keyframes sun-glow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255,210,110,0.8)) saturate(1.4); }
+  50% { filter: drop-shadow(0 0 16px rgba(255,220,130,1)) saturate(1.6); }
+}
+
+.pan-cloud { position: absolute; display: flex; opacity: 0.85; }
+.pan-cloud img { width: 22px; height: 10px; }
+.pan-cloud.c0 { top: 18px; animation: cloud-drift 55s linear infinite; }
+.pan-cloud.c1 { top: 44px; animation: cloud-drift 75s linear infinite; animation-delay: -30s; }
+.pan-cloud.c2 { top: 32px; animation: cloud-drift 95s linear infinite; animation-delay: -60s; }
+@keyframes cloud-drift {
+  0% { left: -80px; }
+  100% { left: 105%; }
+}
+
+.pan-layer { position: absolute; left: -16px; right: -16px; bottom: 26px; height: 110px; }
+.pan-col { position: absolute; bottom: 0; width: 16px; background-size: 16px 16px; background-repeat: repeat; }
+.pan-layer.back { bottom: 40px; filter: hue-rotate(40deg) saturate(0.55) brightness(0.55); animation: layer-drift 46s ease-in-out infinite alternate; }
+.pan-layer.mid { bottom: 30px; filter: hue-rotate(215deg) saturate(0.7) brightness(0.75); animation: layer-drift 30s ease-in-out infinite alternate-reverse; }
+.pan-day .pan-layer.back { filter: saturate(0.8) brightness(0.85); }
+.pan-day .pan-layer.mid { filter: hue-rotate(20deg) brightness(0.95); }
+@keyframes layer-drift {
+  0% { transform: translateX(-8px); }
+  100% { transform: translateX(8px); }
+}
+
+.pan-tree { position: absolute; bottom: 26px; width: 0; }
+.pan-trunk { position: absolute; bottom: 0; left: -5px; background-size: 16px 16px; }
+.pan-canopy { position: absolute; left: 50%; transform: translateX(-50%); background-size: 16px 16px; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25); }
+
+.pan-waterfall {
+  position: absolute;
+  right: 9%;
+  bottom: 24px;
+  width: 14px;
+  height: 78px;
+  background-image: url('assets/minecraft/blocks/water_still_blue.png');
+  background-size: 16px 512px;
+  animation: water-run 2.6s steps(32) infinite;
+  opacity: 0.9;
+}
+@keyframes water-run {
+  0% { background-position-y: 0; }
+  100% { background-position-y: 512px; }
+}
+
+.pan-ground { position: absolute; left: 0; right: 0; bottom: 0; }
+.pan-ground-top { height: 9px; background-size: 16px 16px; filter: brightness(1.15); }
+.pan-ground-side { height: 18px; background-size: 18px 18px; }
+
+.pan-grass { position: absolute; bottom: 24px; width: 14px; height: 14px; }
+
+.pan-house {
+  position: absolute;
+  left: 26%;
+  bottom: 26px;
+  display: grid;
+}
+.pan-house .build-cell { box-shadow: none; }
+
+.pan-pet {
+  position: absolute;
+  left: 18%;
+  bottom: 28px;
+  width: 22px;
+  height: auto;
+  animation: float-bob 2s ease-in-out infinite;
+}
+
+.pan-petal {
+  position: absolute;
+  top: -12px;
+  width: 8px; height: 8px;
+  filter: hue-rotate(0deg) saturate(1.3) brightness(1.2);
+  animation: petal-fall linear forwards;
+  opacity: 0.95;
+}
+@keyframes petal-fall {
+  0% { transform: translate(0, 0) rotate(0); }
+  25% { transform: translate(9px, 55px) rotate(80deg); }
+  50% { transform: translate(-7px, 110px) rotate(160deg); }
+  75% { transform: translate(8px, 160px) rotate(240deg); }
+  100% { transform: translate(-4px, 215px) rotate(320deg); opacity: 0; }
+}
+
+.start-panel { margin-top: 0; }

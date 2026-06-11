@@ -1839,6 +1839,7 @@
   }
 
   function renderHome(animate) {
+    buildPanorama($('panorama-home'));
     renderResBar('res-home');
     var pet = (state.activePet && state.pets[state.activePet]) ? petById(state.activePet) : null;
     var hp = $('home-pet');
@@ -2222,8 +2223,142 @@
 
   $('btn-trophies-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
 
+  // ---------- Panorama (lebendige Szene) ----------
+  var PAN_BLOCKS = {
+    cherry: A + 'blocks/cherry_leaves_opaque.png',
+    cherryLog: A + 'blocks/cherry_log_side.png',
+    snow: A + 'blocks/snow.png',
+    grassTop: A + 'blocks/grass_top.png',
+    tallgrass: A + 'blocks/tallgrass.png',
+    water: A + 'blocks/water_still_blue.png'
+  };
+
+  function panPhase() {
+    var h = new Date().getHours();
+    if (h >= 6 && h < 11) return 'pan-morning';
+    if (h >= 11 && h < 18) return 'pan-day';
+    return 'pan-evening';
+  }
+
+  function skylineHeights(cols, min, max, seedStep) {
+    var hts = [];
+    var h = rnd(min, max);
+    for (var i = 0; i < cols; i++) {
+      h += rnd(-seedStep, seedStep);
+      if (h < min) h = min;
+      if (h > max) h = max;
+      hts.push(h);
+    }
+    return hts;
+  }
+
+  function panLayer(cls, tile, cols, min, max, step) {
+    var layer = el('div', 'pan-layer ' + cls);
+    var hts = skylineHeights(cols, min, max, step);
+    for (var i = 0; i < cols; i++) {
+      var col = el('div', 'pan-col');
+      col.style.left = (i * 16) + 'px';
+      col.style.height = (hts[i] * 16) + 'px';
+      col.style.backgroundImage = "url('" + tile + "')";
+      layer.appendChild(col);
+    }
+    return layer;
+  }
+
+  function panTree(x, leafTile, logTile, big) {
+    var t = el('div', 'pan-tree');
+    t.style.left = x + '%';
+    var s = big ? 1.4 : 1;
+    var trunk = el('div', 'pan-trunk');
+    trunk.style.width = Math.round(10 * s) + 'px';
+    trunk.style.height = Math.round(26 * s) + 'px';
+    trunk.style.backgroundImage = "url('" + logTile + "')";
+    var c1 = el('div', 'pan-canopy');
+    c1.style.width = Math.round(54 * s) + 'px';
+    c1.style.height = Math.round(22 * s) + 'px';
+    c1.style.bottom = Math.round(22 * s) + 'px';
+    c1.style.backgroundImage = "url('" + leafTile + "')";
+    var c2 = el('div', 'pan-canopy');
+    c2.style.width = Math.round(32 * s) + 'px';
+    c2.style.height = Math.round(14 * s) + 'px';
+    c2.style.bottom = Math.round(42 * s) + 'px';
+    c2.style.backgroundImage = "url('" + leafTile + "')";
+    t.appendChild(trunk); t.appendChild(c1); t.appendChild(c2);
+    return t;
+  }
+
+  function buildPanorama(container) {
+    var stamp = state.house + ':' + (state.activePet || '') + ':' + panPhase();
+    if (container.getAttribute('data-stamp') === stamp) return;
+    container.setAttribute('data-stamp', stamp);
+    clear(container);
+    container.className = 'panorama ' + panPhase();
+
+    var w = container.clientWidth || window.innerWidth;
+    var cols = Math.ceil(w / 16) + 1;
+
+    container.appendChild(el('div', 'pan-sky'));
+
+    var sun = img(ASSETS.blocks.glowstone, 'pan-sun');
+    container.appendChild(sun);
+
+    for (var ci = 0; ci < 3; ci++) {
+      var cloud = el('div', 'pan-cloud c' + ci);
+      for (var cj = 0; cj < 3; cj++) cloud.appendChild(img(PAN_BLOCKS.snow));
+      container.appendChild(cloud);
+    }
+
+    container.appendChild(panLayer('back', PAN_BLOCKS.cherry, cols, 2, 6, 2));
+    container.appendChild(panLayer('mid', ASSETS.blocks.leavesOak, cols, 1, 4, 1));
+
+    container.appendChild(panTree(8, PAN_BLOCKS.cherry, PAN_BLOCKS.cherryLog, true));
+    container.appendChild(panTree(72, ASSETS.blocks.leavesOak, ASSETS.blocks.logOak, false));
+    container.appendChild(panTree(88, PAN_BLOCKS.cherry, PAN_BLOCKS.cherryLog, false));
+
+    var fall = el('div', 'pan-waterfall');
+    container.appendChild(fall);
+
+    var ground = el('div', 'pan-ground');
+    var top = el('div', 'pan-ground-top');
+    top.style.backgroundImage = "url('" + PAN_BLOCKS.grassTop + "')";
+    var side = el('div', 'pan-ground-side');
+    side.style.backgroundImage = "url('" + ASSETS.blocks.grass + "')";
+    ground.appendChild(top); ground.appendChild(side);
+    container.appendChild(ground);
+
+    for (var gi = 0; gi < 5; gi++) {
+      var g = img(PAN_BLOCKS.tallgrass, 'pan-grass');
+      g.style.left = rnd(4, 92) + '%';
+      container.appendChild(g);
+    }
+
+    var stage = HOUSE_STAGES[state.house - 1];
+    var house = el('div', 'pan-house build-grid');
+    renderBlueprint(house, stage, 9, false);
+    container.appendChild(house);
+
+    if (state.activePet && state.pets[state.activePet]) {
+      var pp = img(petById(state.activePet).src, 'pan-pet');
+      container.appendChild(pp);
+    }
+  }
+
+  function spawnPetal() {
+    var pan = null;
+    if ($('screen-start').classList.contains('active')) pan = $('panorama-start');
+    else if ($('screen-home').classList.contains('active')) pan = $('panorama-home');
+    if (!pan || !pan.firstChild) return;
+    var p = img(PAN_BLOCKS.cherry, 'pan-petal');
+    p.style.left = rnd(2, 96) + '%';
+    p.style.animationDuration = (3.5 + Math.random() * 3) + 's';
+    pan.appendChild(p);
+    setTimeout(function () { if (p.parentNode) p.parentNode.removeChild(p); }, 7000);
+  }
+  setInterval(spawnPetal, 1900);
+
   // ---------- Start screen ----------
   function renderStart() {
+    buildPanorama($('panorama-start'));
     var lvl = levelOf(state.xp);
     $('start-name').textContent = state.playerName;
     $('start-level').textContent = 'Level ' + lvl + '  \u00b7  ' + state.xp + ' XP  \u00b7  ' + totalHearts() + ' Herzen';
