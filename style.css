@@ -89,6 +89,15 @@ img { image-rendering: pixelated; -webkit-user-drag: none; user-select: none; }
 .mc-btn:active { transform: translateY(3px); box-shadow: inset 3px 3px 0 rgba(255,255,255,0.35), inset -3px -3px 0 rgba(0,0,0,0.45), 0 2px 0 rgba(0,0,0,0.4); }
 .mc-btn:disabled { opacity: 0.45; cursor: default; }
 .mc-btn.big { padding: 18px 26px; font-size: clamp(21px, 5.5vw, 28px); }
+.mc-btn.play {
+  background-image: none;
+  background-color: #3f9e3f;
+  animation: play-pulse 2.2s ease-in-out infinite;
+}
+@keyframes play-pulse {
+  0%, 100% { transform: scale(1); box-shadow: inset 3px 3px 0 rgba(255,255,255,0.35), inset -3px -3px 0 rgba(0,0,0,0.45), 0 5px 0 rgba(0,0,0,0.4); }
+  50% { transform: scale(1.025); box-shadow: inset 3px 3px 0 rgba(255,255,255,0.35), inset -3px -3px 0 rgba(0,0,0,0.45), 0 5px 0 rgba(0,0,0,0.4), 0 0 18px rgba(110,220,110,0.45); }
+}
 .mc-btn.small { font-size: clamp(14px, 3.6vw, 17px); padding: 10px 14px; width: auto; }
 .mc-btn.selected {
   background-image: url('assets/minecraft/blocks/gold_block.png');
@@ -114,12 +123,23 @@ img { image-rendering: pixelated; -webkit-user-drag: none; user-select: none; }
 
 /* ---------- Start ---------- */
 .start-panel { margin-top: 4vh; }
-.start-hero { display: flex; align-items: center; gap: 16px; }
-.start-pick { width: 64px; height: 64px; animation: float-bob 2.4s ease-in-out infinite; }
-.start-level { font-size: clamp(15px, 4vw, 19px); color: #aef27e; }
-.start-equip { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-.start-equip img { width: 30px; height: 30px; }
-.start-equip img.start-pet { height: auto; align-self: center; }
+.hero-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 460px;
+  background: rgba(0,0,0,0.35);
+  border: 2px solid #000;
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,0.1), inset -2px -2px 0 rgba(0,0,0,0.5);
+  padding: 10px 14px;
+}
+.hero-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.start-pick { width: 52px; height: 52px; animation: float-bob 2.4s ease-in-out infinite; }
+.start-level { font-size: clamp(13px, 3.6vw, 17px); color: #aef27e; }
+.start-equip { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; min-height: 40px; }
+.start-equip .equip-slot img { width: 28px; height: 28px; }
+.start-equip .equip-slot img.start-pet { height: auto; }
 
 @keyframes float-bob {
   0%, 100% { transform: translateY(0); }
@@ -149,12 +169,12 @@ img { image-rendering: pixelated; -webkit-user-drag: none; user-select: none; }
 .cost-chip.missing .res-count { color: #ff8a8a; }
 
 /* ---------- HUD ---------- */
-.hud { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-.hud-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hud { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.hud-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .hud-hearts { display: flex; gap: 2px; }
-.heart-slot { position: relative; width: 26px; height: 26px; }
-.heart-slot img { position: absolute; inset: 0; width: 26px; height: 26px; }
-.hud-pet { width: 32px; height: auto; }
+.heart-slot { position: relative; width: 22px; height: 22px; }
+.heart-slot img { position: absolute; inset: 0; width: 22px; height: 22px; }
+.hud-pet { width: 28px; height: auto; }
 .hud-pet.shield-pulse { animation: shield-pulse 0.9s ease; }
 @keyframes shield-pulse {
   0% { transform: scale(1); filter: drop-shadow(0 0 0 #7ecbff); }
@@ -172,12 +192,12 @@ img { image-rendering: pixelated; -webkit-user-drag: none; user-select: none; }
 /* ---------- Boss ---------- */
 .boss-area {
   width: 100%; max-width: 640px;
-  display: flex; align-items: center; gap: 16px;
+  display: flex; align-items: center; gap: 14px;
   background: rgba(40, 8, 8, 0.75);
   border: 4px solid #000;
   box-shadow: inset 3px 3px 0 rgba(255,120,120,0.18), inset -3px -3px 0 rgba(0,0,0,0.55);
-  padding: 12px 14px;
-  margin-bottom: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
 }
 .boss-img { width: 84px; height: 84px; transition: transform 0.1s; }
 .boss-img.hit { animation: boss-hit 0.45s ease; }
@@ -197,12 +217,26 @@ img { image-rendering: pixelated; -webkit-user-drag: none; user-select: none; }
 .boss-info { flex: 1; display: flex; flex-direction: column; gap: 5px; }
 .boss-name { font-size: clamp(17px, 4.6vw, 23px); color: #ff8a8a; }
 .boss-hp-bar {
+  position: relative;
   width: 100%; height: 16px;
   background: rgba(0,0,0,0.6);
   border: 2px solid #000;
   box-shadow: inset 2px 2px 0 rgba(0,0,0,0.6);
 }
+.boss-hp-bar::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: repeating-linear-gradient(90deg,
+    transparent 0, transparent calc(100% / 9 - 2px),
+    rgba(0,0,0,0.55) calc(100% / 9 - 2px), rgba(0,0,0,0.55) calc(100% / 9));
+  pointer-events: none;
+}
 .boss-hp-fill { height: 100%; width: 100%; background: #d63a3a; box-shadow: inset 0 3px 0 rgba(255,255,255,0.3); transition: width 0.35s steps(8); }
+.boss-hp-fill.dmg-flash { animation: hp-flash 0.4s ease; }
+@keyframes hp-flash {
+  0% { background: #fff; }
+  100% { background: #d63a3a; }
+}
 .boss-hp-text { font-size: 13px; color: #ffb0b0; }
 .boss-dmg-label { font-size: 12px; color: #d8d8d8; }
 
@@ -221,8 +255,15 @@ img { image-rendering: pixelated; -webkit-user-drag: none; user-select: none; }
 .side-name { font-size: 15px; color: #aef27e; }
 .num-label { font-size: clamp(18px, 5vw, 26px); color: #ffd83d; width: 100%; text-align: center; }
 
-.answers { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; width: 100%; }
-.mc-btn.answer { width: auto; min-width: 96px; font-size: clamp(24px, 7vw, 36px); padding: 16px 24px; }
+.answers { display: flex; gap: 12px; justify-content: center; width: 100%; }
+.mc-btn.answer {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 170px;
+  height: 78px;
+  font-size: clamp(24px, 7vw, 36px);
+  padding: 0 8px;
+}
 .mc-btn.answer.word { font-size: clamp(16px, 4.4vw, 22px); }
 .mc-btn.answer.correct { background-image: none; background-color: #3f9e3f; }
 .mc-btn.answer.wrong { background-image: none; background-color: #b03030; opacity: 0.8; }
@@ -308,13 +349,14 @@ img { image-rendering: pixelated; -webkit-user-drag: none; user-select: none; }
 .forge-stats { font-size: clamp(14px, 3.8vw, 17px); color: #aef27e; }
 .forge-rows { display: flex; flex-direction: column; gap: 10px; width: 100%; }
 .forge-row {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  display: flex; flex-direction: column; gap: 8px;
   background: rgba(0,0,0,0.35);
   border: 2px solid #000;
   box-shadow: inset 2px 2px 0 rgba(255,255,255,0.1), inset -2px -2px 0 rgba(0,0,0,0.5);
   padding: 8px 10px;
-  justify-content: center;
 }
+.forge-line { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.forge-line:last-child:not(:first-child) { justify-content: flex-end; }
 .forge-cur { display: flex; align-items: center; gap: 8px; min-width: 110px; }
 .forge-cur img { width: 34px; height: 34px; }
 .forge-label { font-size: 14px; color: #d8d8d8; width: 78px; }
@@ -491,7 +533,9 @@ body.shake { animation: screen-shake 0.35s ease; }
 }
 
 .reward-banner {
-  display: none;
+  display: flex;
+  opacity: 0;
+  height: 50px;
   align-items: center;
   justify-content: center;
   gap: 10px;
@@ -503,7 +547,7 @@ body.shake { animation: screen-shake 0.35s ease; }
   padding: 8px 14px;
 }
 .reward-banner img { width: 30px; height: 30px; }
-.reward-banner.show { display: flex; animation: banner-in 0.35s cubic-bezier(0.2, 1.5, 0.4, 1); }
+.reward-banner.show { opacity: 1; animation: banner-in 0.35s cubic-bezier(0.2, 1.5, 0.4, 1); }
 @keyframes banner-in {
   0% { transform: translateY(16px) scale(0.8); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
@@ -544,7 +588,7 @@ body.shake { animation: screen-shake 0.35s ease; }
   60% { transform: rotate(8deg) scale(1.06); }
 }
 
-.hud-avatar { width: 28px; height: 28px; }
+.hud-avatar { width: 24px; height: 24px; }
 
 .strolling-mob {
   position: fixed;
@@ -602,6 +646,12 @@ body.shake { animation: screen-shake 0.35s ease; }
   margin-top: 4px;
 }
 .parent-link .btn-ico { width: 20px; height: 20px; flex: 0 0 20px; }
+
+.trophy-label, .pet-bonus, .pet-unlock, .biome-status, .boss-hp-text, .boss-dmg-label,
+.forge-next-name, .forge-label, .forge-maxed, .res-count, .hud-level, .hud-streak,
+.pets-active-bonus, .summary-hint, .gate-progress {
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.85);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

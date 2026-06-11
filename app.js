@@ -1279,6 +1279,10 @@
         shakeScreen();
         bossHitAnimation();
         renderBossHp();
+        var fill = $('boss-hp-fill');
+        fill.classList.remove('dmg-flash');
+        void fill.offsetWidth;
+        fill.classList.add('dmg-flash');
         renderHUD();
         if (session.firstTry && session.streak > 0 && session.streak % STREAK_BONUS_EVERY === 0) {
           autoSpeak(praiseLine() + ' ' + session.streak + ' am St\u00fcck \u2014 ein Diamant f\u00fcr dich!', 150);
@@ -1779,27 +1783,33 @@
   function forgeRow(label, currentSrc, nextName, nextSrc, cost, onCraft) {
     var row = el('div', 'forge-row');
 
+    var line1 = el('div', 'forge-line');
     var cur = el('div', 'forge-cur');
     cur.appendChild(el('div', 'forge-label', label));
     cur.appendChild(currentSrc ? img(currentSrc) : el('div', 'equip-empty', '\u2014'));
-    row.appendChild(cur);
+    line1.appendChild(cur);
 
     if (nextSrc) {
-      row.appendChild(el('div', 'forge-arrow', '\u2192'));
+      line1.appendChild(el('div', 'forge-arrow', '\u2192'));
       var nxt = el('div', 'forge-next');
       nxt.appendChild(img(nextSrc));
       nxt.appendChild(el('div', 'forge-next-name', nextName));
-      row.appendChild(nxt);
+      line1.appendChild(nxt);
+      row.appendChild(line1);
+
+      var line2 = el('div', 'forge-line');
       var costEl = el('div', 'forge-cost');
       renderCostRow(costEl, cost);
-      row.appendChild(costEl);
+      line2.appendChild(costEl);
       var btn = el('button', 'mc-btn small forge-btn');
       btn.appendChild(el('span', null, 'Schmieden'));
       btn.disabled = !canAfford(cost);
       btn.addEventListener('click', onCraft);
-      row.appendChild(btn);
+      line2.appendChild(btn);
+      row.appendChild(line2);
     } else {
-      row.appendChild(el('div', 'forge-maxed', 'Meisterst\u00fcck!'));
+      line1.appendChild(el('div', 'forge-maxed', 'Meisterst\u00fcck!'));
+      row.appendChild(line1);
     }
     return row;
   }
@@ -1955,14 +1965,19 @@
 
     var eq = $('start-equip');
     clear(eq);
+    function slot(src, cls) {
+      var w = el('div', 'equip-slot');
+      w.appendChild(img(src, cls));
+      return w;
+    }
     var sw = state.equip.schwert;
-    if (sw >= 0) eq.appendChild(img(SWORD_TIERS[sw].src));
+    if (sw >= 0) eq.appendChild(slot(SWORD_TIERS[sw].src));
     ARMOR_SLOTS.forEach(function (sl) {
       var t = state.equip[sl.id];
-      if (t >= 0) eq.appendChild(img(armorSrc(t, sl)));
+      if (t >= 0) eq.appendChild(slot(armorSrc(t, sl)));
     });
     if (state.activePet && state.pets[state.activePet]) {
-      eq.appendChild(img(petById(state.activePet).src, 'start-pet'));
+      eq.appendChild(slot(petById(state.activePet).src, 'start-pet'));
     }
 
     renderGroundStrip();

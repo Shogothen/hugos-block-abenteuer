@@ -9,7 +9,7 @@
 <title>Hugos Block-Abenteuer</title>
 <link rel="icon" type="image/png" href="icon-180.png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -17,18 +17,18 @@
 <section id="screen-start" class="screen active">
   <div class="mc-panel start-panel">
     <h1 class="title">Hugos<br>Block-Abenteuer</h1>
-    <div class="start-hero">
+    <div class="hero-card">
       <img id="start-face" src="assets/minecraft/mobs/steve_face.png" alt="" class="start-face">
-      <img id="start-pickaxe" src="assets/minecraft/items/wood_pickaxe.png" alt="" class="start-pick">
-      <div>
+      <div class="hero-info">
         <div id="start-name" class="start-name">Hugo</div>
         <div id="start-level" class="start-level">Level 1</div>
-        <div id="start-equip" class="start-equip"></div>
       </div>
+      <img id="start-pickaxe" src="assets/minecraft/items/wood_pickaxe.png" alt="" class="start-pick">
     </div>
+    <div id="start-equip" class="start-equip"></div>
     <div id="res-start" class="res-bar"></div>
 
-    <button id="btn-start-game" class="mc-btn big">
+    <button id="btn-start-game" class="mc-btn big play">
       <img class="btn-ico" src="assets/minecraft/blocks/grass.png" alt="">
       <span>Spielen</span>
     </button>
@@ -329,6 +329,6 @@
   </div>
 </div>
 
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
