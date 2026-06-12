@@ -7,6 +7,7 @@
 
 (function () {
   'use strict';
+  var APP_V = 24;
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2887,6 +2888,54 @@
     $('tog-limit').querySelector('span').textContent = 'Runden pro Tag: ' + (lim > 0 ? lim : 'Aus');
     $('tog-limit').classList.toggle('selected', lim > 0);
   }
+
+  function diagLine(txt, ok) {
+    var d = $('diag-out');
+    var line = el('div', 'diag-line ' + (ok === true ? 'ok' : ok === false ? 'bad' : ''));
+    line.textContent = txt;
+    d.appendChild(line);
+  }
+  $('btn-diag').addEventListener('click', function () {
+    var out = $('diag-out');
+    clear(out);
+    diagLine('App-Version: ' + APP_V, true);
+    // 1) WebAudio-Kontext
+    var c = null;
+    try { c = Sound.ctx(); } catch (e) {}
+    diagLine('WebAudio: ' + (c ? c.state : 'FEHLT'), !!c);
+    try { if (c && c.state === 'suspended') c.resume(); } catch (e) {}
+    // 2) Beep ueber die Sound-Engine
+    try { Sound.levelup(); diagLine('Beep gespielt - hoerst du ihn?', true); }
+    catch (e) { diagLine('Beep-Fehler: ' + e.name, false); }
+    // 3) Datei laden
+    if (typeof fetch === 'undefined') { diagLine('fetch fehlt', false); return; }
+    fetch(AUDIO_BASE + 'intro.mp3').then(function (r) {
+      diagLine('Datei: HTTP ' + r.status, r.ok);
+      if (!r.ok) return null;
+      return r.arrayBuffer();
+    }).then(function (buf) {
+      if (!buf) return;
+      diagLine('Geladen: ' + Math.round(buf.byteLength / 1024) + ' KB', true);
+      if (!c) return;
+      c.decodeAudioData(buf.slice(0), function (dec) {
+        diagLine('Dekodiert: ' + Math.round(dec.duration) + 's', true);
+        try {
+          var g = c.createGain(); g.gain.value = 0.5; g.connect(c.destination);
+          var s = c.createBufferSource(); s.buffer = dec; s.connect(g);
+          s.start(0);
+          setTimeout(function () { try { s.stop(); } catch (e) {} }, 4000);
+          diagLine('WebAudio spielt 4s - hoerst du Musik?', true);
+        } catch (e) { diagLine('WebAudio-Start-Fehler: ' + e.name, false); }
+      }, function (err) {
+        diagLine('Dekodier-Fehler: ' + (err && err.message ? err.message : 'unbekannt'), false);
+        var h = new Audio(AUDIO_BASE + 'intro.mp3');
+        h.volume = 0.6;
+        var p = h.play();
+        if (p && p.then) p.then(function () { diagLine('HTML-Audio spielt - hoerst du Musik?', true); setTimeout(function(){ h.pause(); }, 4000); })
+                          .catch(function (er) { diagLine('HTML-Audio-Fehler: ' + er.name, false); });
+      });
+    }).catch(function (e) { diagLine('Lade-Fehler: ' + e.name, false); });
+  });
 
   $('tog-limit').addEventListener('click', function () {
     var seq = [0, 2, 3, 4, 5];

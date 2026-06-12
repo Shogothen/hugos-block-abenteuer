@@ -9,14 +9,14 @@
 <title>Hugos Block-Abenteuer</title>
 <link rel="icon" type="image/png" href="icon-180.png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=23">
+<link rel="stylesheet" href="style.css?v=24">
 </head>
 <body>
 
 <!-- ============ START ============ -->
 <section id="screen-start" class="screen active">
   <button id="btn-music" class="music-btn" aria-label="Musik">
-    <img src="assets/minecraft/blocks/noteblock.png" alt="">
+    <img src="assets/minecraft/items/record_13.png" alt="">
   </button>
   <div id="panorama-start" class="panorama"></div>
   <div class="mc-panel start-panel">
@@ -228,6 +228,7 @@
         <button id="tog-sound" class="mc-btn small"><span>Sound: An</span></button>
         <button id="tog-speak" class="mc-btn small"><span>Vorlesen: An</span></button>
         <button id="tog-limit" class="mc-btn small"><span>Runden pro Tag: Aus</span></button>
+        <button id="btn-diag" class="mc-btn small"><span>Audio-Diagnose</span></button>
       </div>
       <div class="btn-row">
         <button id="btn-parent-reset" class="mc-btn small danger"><span>Fortschritt löschen</span></button>
@@ -235,6 +236,8 @@
       </div>
     </div>
   </div>
+
+  <div id="diag-out" class="diag-out"></div>
 </section>
 
 <!-- ============ OVERLAYS ============ -->
@@ -370,6 +373,6 @@
   </div>
 </div>
 
-<script src="app.js?v=23"></script>
+<script src="app.js?v=24"></script>
 </body>
 </html>
