@@ -738,6 +738,8 @@
       } catch (e) {}
     }
     return {
+      ctx: function () { return ac(); },
+      master: function () { ac(); return master; },
       unlock: function () {
         var c = ac(); if (!c) return;
         try {
@@ -836,6 +838,13 @@
   });
 
   // UI click sound via delegation (answers play their own feedback sounds)
+  $('btn-music').addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (introPlaying()) { stopIntro(); }
+    else { introDone = false; introWanted = true; if (introBuffer) startIntroNow(); else tryStartIntro(); }
+    $('btn-music').classList.toggle('selected', introPlaying());
+  });
+
   document.addEventListener('click', function (e) {
     tryStartIntro();
     if (!e.target.closest) return;
@@ -910,50 +919,86 @@
       }
     } catch (e) {}
   }
-  // ---------- Intro-Song (nur Startbildschirm, einmal pro Besuch) ----------
-  var introAudio = null;
+  // ---------- Intro-Song: WebAudio (gleiche Schiene wie die Tipp-Sounds) ----------
+  var introBuffer = null;
+  var introSource = null;
+  var introGain = null;
   var introDone = false;
-  var introFadeTimer = null;
-  function introInit() {
+  var introWanted = false;
+  var introHtml = null;
+
+  (function loadIntroBuffer() {
+    if (typeof fetch === 'undefined') return;
     try {
-      introAudio = new Audio(AUDIO_BASE + 'intro.mp3');
-      introAudio.preload = 'auto';
-      introAudio.volume = 0.6;
-      introAudio.onended = function () { introDone = true; introAudio = null; };
-    } catch (e) { introAudio = null; }
+      fetch(AUDIO_BASE + 'intro.mp3')
+        .then(function (r) { return r.arrayBuffer(); })
+        .then(function (buf) {
+          var c = Sound.ctx ? Sound.ctx() : null;
+          if (!c) return;
+          c.decodeAudioData(buf, function (decoded) {
+            introBuffer = decoded;
+            if (introWanted) startIntroNow();
+          }, function () {});
+        })
+        .catch(function () {});
+    } catch (e) {}
+  })();
+
+  function startIntroNow() {
+    if (introDone || introSource) return;
+    if (!$('screen-start').classList.contains('active')) return;
+    var c = Sound.ctx ? Sound.ctx() : null;
+    if (!c || !introBuffer) return;
+    try {
+      if (c.state === 'suspended') c.resume();
+      introGain = c.createGain();
+      introGain.gain.value = 0.55;
+      introGain.connect(c.destination);
+      introSource = c.createBufferSource();
+      introSource.buffer = introBuffer;
+      introSource.connect(introGain);
+      introSource.onended = function () { introDone = true; introSource = null; };
+      introSource.start(0);
+      introDone = true;
+    } catch (e) { introSource = null; }
   }
-  setTimeout(introInit, 400);
+
   function tryStartIntro() {
     if (introDone) return;
     if (!$('screen-start').classList.contains('active')) return;
+    introWanted = true;
+    if (introBuffer) { startIntroNow(); return; }
+    // Fallback, falls WebAudio-Decode (noch) fehlt: HTML-Audio im Gesten-Kontext
     try {
-      if (!introAudio) introInit();
-      var p = introAudio.play();
-      if (p && p.then) {
-        p.then(function () { introDone = true; })
-         .catch(function () { /* blockiert: naechster Tipp versucht es erneut */ });
-      } else {
-        introDone = true;
+      if (!introHtml) {
+        introHtml = new Audio(AUDIO_BASE + 'intro.mp3');
+        introHtml.volume = 0.6;
+        introHtml.onended = function () { introDone = true; introHtml = null; };
       }
+      var p = introHtml.play();
+      if (p && p.then) p.then(function () { introDone = true; introWanted = false; }).catch(function () {});
     } catch (e) {}
   }
   ['click', 'touchend', 'pointerup'].forEach(function (ev) {
     document.addEventListener(ev, tryStartIntro, { passive: true });
   });
+
   function stopIntro() {
     introDone = true;
-    if (!introAudio) return;
-    var a = introAudio;
-    introAudio = null;
-    clearInterval(introFadeTimer);
-    introFadeTimer = setInterval(function () {
-      a.volume = Math.max(0, a.volume - 0.08);
-      if (a.volume <= 0.01) {
-        clearInterval(introFadeTimer);
-        try { a.pause(); } catch (e) {}
-      }
-    }, 90);
+    introWanted = false;
+    if (introSource) {
+      var s = introSource, g = introGain;
+      introSource = null;
+      try {
+        var c = Sound.ctx();
+        g.gain.setValueAtTime(g.gain.value, c.currentTime);
+        g.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.0);
+        setTimeout(function () { try { s.stop(); } catch (e) {} }, 1100);
+      } catch (e) { try { s.stop(); } catch (e2) {} }
+    }
+    if (introHtml) { try { introHtml.pause(); } catch (e) {} introHtml = null; }
   }
+  function introPlaying() { return !!introSource || (introHtml && !introHtml.paused); }
 
   function stopVoiceClip() {
     try { if (voiceAudio && !voiceAudio.paused) voiceAudio.pause(); } catch (e) {}
