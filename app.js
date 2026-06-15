@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 38;
-  var AUDIO_VER = '?v=38';
+  var APP_V = 39;
+  var AUDIO_VER = '?v=39';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2232,12 +2232,17 @@
     var loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
     var matCache = {};
-    var texErrors = 0;
+    // Ersatzfarben, falls eine Textur fehlt — Haus bleibt erkennbar statt weiß
+    var FALLBACK = {
+      grass_top: 0x6aa84f, dirt: 0x8b5a2b, planks: 0xb8895a, log: 0x6b4f2a,
+      stripped: 0xc8a06a, stone: 0x9a9a9a, cobble: 0x888888, glass: 0xadd8e6,
+      door_low: 0x7a5a30, door_up: 0x7a5a30, glow: 0xffd27a, slab: 0xb0b0b0
+    };
     function mat(name) {
       if (matCache[name]) return matCache[name];
       var glass = (name === 'glass');
       var m = new THREE.MeshStandardMaterial({
-        color: 0xffffff, roughness: 0.95, metalness: 0.0,
+        color: FALLBACK[name] || 0xcccccc, roughness: 0.95, metalness: 0.0,
         transparent: glass, opacity: glass ? 0.55 : 1.0,
         emissive: (name === 'glow') ? new THREE.Color(0xffd27a) : new THREE.Color(0x000000),
         emissiveIntensity: (name === 'glow') ? 0.8 : 0
@@ -2251,11 +2256,6 @@
           m.map = t;
           m.color.set(0xffffff);
           m.needsUpdate = true;
-        },
-        undefined,
-        function () {
-          texErrors++;
-          $('build3d-hint').textContent = 'Textur fehlt: ' + BUILD3D_TEX[name];
         }
       );
       return m;
