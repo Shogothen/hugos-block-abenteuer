@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 42;
-  var AUDIO_VER = '?v=42';
+  var APP_V = 43;
+  var AUDIO_VER = '?v=43';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2406,9 +2406,9 @@
         cx /= n; cy /= n; cz /= n;
         group.position.set(-cx, -cy, -cz);
         var pivot = new THREE.Group(); pivot.add(group);
-        pivot.rotation.y = 0.7; pivot.rotation.x = 0.5;
+        pivot.rotation.y = 0.7; pivot.rotation.x = 0.32;
         scene.add(pivot);
-        camera.position.set(0, 2, 13); camera.lookAt(0, 0, 0);
+        camera.position.set(0, 1.5, 18); camera.lookAt(0, 0.5, 0);
         // zwei Frames, damit Texturen sicher gezeichnet sind
         rnd.render(scene, camera);
         return rc.toDataURL('image/png');
