@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 36;
-  var AUDIO_VER = '?v=36';
+  var APP_V = 37;
+  var AUDIO_VER = '?v=37';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2152,7 +2152,7 @@
     var b = [];
     function add(x, y, z, t) { b.push({ x: x, y: y, z: z, t: t }); }
     var N = 7;
-    for (var x = -2; x < N + 2; x++) for (var z = -2; z < N + 2; z++) { add(x, 0, z, 'grass_top'); add(x, -1, z, 'dirt'); }
+    for (var x = -1; x < N + 1; x++) for (var z = -1; z < N + 1; z++) { add(x, 0, z, 'grass_top'); add(x, -1, z, 'dirt'); }
     for (var y = 1; y < 4; y++) for (var x2 = 0; x2 < N; x2++) for (var z2 = 0; z2 < N; z2++) {
       var edge = x2 === 0 || x2 === N - 1 || z2 === 0 || z2 === N - 1;
       if (!edge) continue;
@@ -2233,17 +2233,21 @@
     var matCache = {};
     function mat(name) {
       if (matCache[name]) return matCache[name];
-      var t = loader.load(A + 'build/' + BUILD3D_TEX[name]);
-      t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter;
-      if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding;
       var glass = (name === 'glass');
       var m = new THREE.MeshStandardMaterial({
-        map: t, roughness: 0.95, metalness: 0.0,
+        color: 0xffffff, roughness: 0.95, metalness: 0.0,
         transparent: glass, opacity: glass ? 0.55 : 1.0,
         emissive: (name === 'glow') ? new THREE.Color(0xffd27a) : new THREE.Color(0x000000),
         emissiveIntensity: (name === 'glow') ? 0.8 : 0
       });
-      matCache[name] = m; return m;
+      matCache[name] = m;
+      loader.load(A + 'build/' + BUILD3D_TEX[name] + AUDIO_VER, function (t) {
+        t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter;
+        if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding;
+        m.map = t;
+        m.needsUpdate = true;
+      });
+      return m;
     }
 
     var group = new THREE.Group();
