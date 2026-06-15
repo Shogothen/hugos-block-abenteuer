@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 45;
-  var AUDIO_VER = '?v=45';
+  var APP_V = 46;
+  var AUDIO_VER = '?v=46';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2515,9 +2515,9 @@
     generateBuildPreviews();
   }
 
-  function generateBuildPreviews() {
+  function generateBuildPreviews(onDone) {
     var need = BLUEPRINTS.some(function (bp) { return !bpPreviewCache[bp.id]; });
-    if (!need) return;
+    if (!need) { if (onDone) onDone(); return; }
     loadThree(function () {
       var THREE = window.THREE;
       var SZ = 220;
@@ -2575,14 +2575,18 @@
         BLUEPRINTS.forEach(function (bp) {
           bpPreviewCache[bp.id] = renderOne(bp);
         });
-        // In sichtbare Karten einsetzen
-        var imgs = $('build-picker').querySelectorAll('.bp-preview-img');
-        var i = 0;
-        imgs.forEach(function (im) {
-          if (BLUEPRINTS[i]) im.src = bpPreviewCache[BLUEPRINTS[i].id];
-          i++;
-        });
+        // In sichtbare Karten einsetzen (falls Picker offen)
+        var picker = $('build-picker');
+        if (picker && picker.querySelectorAll) {
+          var imgs = picker.querySelectorAll('.bp-preview-img');
+          var i = 0;
+          imgs.forEach(function (im) {
+            if (BLUEPRINTS[i]) im.src = bpPreviewCache[BLUEPRINTS[i].id];
+            i++;
+          });
+        }
         if (tries < 3) setTimeout(pass, 180); // Texturen nachladen, neu rendern
+        else if (onDone) onDone();
       }
       setTimeout(pass, 120);
     });
@@ -2732,9 +2736,44 @@
     chips.forEach(function (chip) { chip.classList.remove('wiggle'); void chip.offsetWidth; chip.classList.add('wiggle'); });
   }
 
+  // Galerie der von Hugo gebauten 3D-Häuser (als Standbilder)
+  function renderBuiltGallery() {
+    var container = $('home-builds');
+    if (!container) return;
+    var built = BLUEPRINTS.filter(function (bp) { return state.builtProjects && state.builtProjects[bp.id]; });
+    if (built.length === 0) { container.style.display = 'none'; return; }
+    container.style.display = 'flex';
+    clear(container);
+    var title = el('div', 'home-builds-title', 'Meine Bauwerke');
+    container.appendChild(title);
+    var row = el('div', 'home-builds-row');
+    built.forEach(function (bp) {
+      var tile = el('div', 'built-tile');
+      var im = el('img', 'built-tile-img');
+      im.alt = bp.name;
+      if (bpPreviewCache[bp.id]) im.src = bpPreviewCache[bp.id];
+      tile.appendChild(im);
+      tile.appendChild(el('div', 'built-tile-name', bp.name));
+      row.appendChild(tile);
+    });
+    container.appendChild(row);
+    // Falls Vorschaubilder noch nicht gerendert: nachholen, dann Bilder setzen
+    if (built.some(function (bp) { return !bpPreviewCache[bp.id]; })) {
+      generateBuildPreviews(function () {
+        var imgs = container.querySelectorAll('.built-tile-img');
+        var i = 0;
+        built.forEach(function (bp) {
+          if (imgs[i] && bpPreviewCache[bp.id]) imgs[i].src = bpPreviewCache[bp.id];
+          i++;
+        });
+      });
+    }
+  }
+
   function renderHome(animate) {
 
     buildPanorama($('panorama-home'));
+    renderBuiltGallery();
     renderResBar('res-home');
     var pet = (state.activePet && state.pets[state.activePet]) ? petById(state.activePet) : null;
     var hp = $('home-pet');
