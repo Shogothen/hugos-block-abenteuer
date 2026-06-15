@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 47;
-  var AUDIO_VER = '?v=47';
+  var APP_V = 48;
+  var AUDIO_VER = '?v=48';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2155,7 +2155,9 @@
     door_low: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAC3SURBVDjLY8jOr/o/rcTxf3qADpgG4bokczDe2huAIh5oqwLGIHGYOoZlTb5wDogNkoRhEB+XOMxSuAEgGsZGdgWMj00MbMCOKfFw54EEkDEucZhFIDm4Ach+hWGQQlzi8DDAZQC2QEQWx/ACMbGALI5hAKmxABIHhwF6LCD7Dxbi2MRhmGAsgBThigWwFxq6p5IdC2ADsCVlYmMBJQzIiQWK8gIsbMCBSCjEcYmDDQARsGxKDgYAdT80X3+b8xAAAAAASUVORK5CYII=',
     door_up: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAsUlEQVQ4y2PYMSX+/7ImXzAGsZExIbFpJY7/GUACIAY5OD1A5z8DzKRAWxWwADLGJ45hAJiDBkCuwyUOM5yhoXsqTgO29gbgFAfpqUsy/8+Qn59PtgvAcjAOyDQQG2Q6CMNiBpc4VQIRHAaUBCI4DFCcQ2IgUhyNKAaQE4goYQCTQPYfTDM2cXgYUJyUkf2DnllgYQDjg1ItCGfnVyEMQE7KyJphzkcWB2kEuQjmBRAbAHXF0T1BG/MOAAAAAElFTkSuQmCC',
     glow: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAD6SURBVDjLbZOxDUIxEENvFgokRmAAWkTBEHQUsAKI4ZjgT0FPEfCJF1kWkfJ//sW5s3359V6u43k/jtthM867VU99E9dUTPs9XsvEP07bUQoAFvCyX/cUgJiAWgub+EqgvmFDMsX1VswPNwM9vEpK0kENxUkCvhMAaoo/jeikosdghJTCIAdqrYk8Z8VhWJXTAuw6XQoegWsTtXCT3FRi2ocRSSg428gmSbwi3lBVey35Owpz0Oh9zv57+2BV3rI0LOPpR3vgfQVAdlUF6L4gV+siW15nb5VTd8+awaxml8hZIMeNcz/Kjfp3jVNi7hdasppT5acimRv5Achkgl/nEOAdAAAAAElFTkSuQmCC',
-    slab: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAADJSURBVDjLnVOxDQQhDGNoekZgAahoKFmBAZiJVzgZJf7cF19YcElknMQX1lrbw5zT4K0myKX3vltr5xSMMQwQr7WeOtSmlB4CCUiSC3DXMY2c80OgX+NCTwkILwEntAKvJcSNApbHQJv6vDPw5EqBJ12Txhh3KKWci8gRCKsA34hJDYD8VYCd6pO9wPvH9kwL3LO3Bf1tZsC7/+UL3L/W+OZEPUgdOwTSD++f9+2puj4QArzgWZY9ovPmX3gbmo6xW48PYIh/ffABM7/1w1U+cZ8AAAAASUVORK5CYII='
+    slab: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAADJSURBVDjLnVOxDQQhDGNoekZgAahoKFmBAZiJVzgZJf7cF19YcElknMQX1lrbw5zT4K0myKX3vltr5xSMMQwQr7WeOtSmlB4CCUiSC3DXMY2c80OgX+NCTwkILwEntAKvJcSNApbHQJv6vDPw5EqBJ12Txhh3KKWci8gRCKsA34hJDYD8VYCd6pO9wPvH9kwL3LO3Bf1tZsC7/+UL3L/W+OZEPUgdOwTSD++f9+2puj4QArzgWZY9ovPmX3gbmo6xW48PYIh/ffABM7/1w1U+cZ8AAAAASUVORK5CYII=',
+    leaves: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAC4SURBVDjLjZNRCsMwDEN11/30AqNX6Y5S6N06HFB4CGfdh0nixJYsO9pe2207r3Osx+cYVvv9vQ+zn2/LLzppdem7Wnmu4NrXKgYQyUFkRXSbiJDlGKVjaL9Ij0lWwdRnJshgC9Qhpz5i7Ul91Qnqo6522wrVDOssIiULMshW+qyVyt0sMKlB1Cn7zyw4iX4pnrNARrONdibVHBiWZd9gQISn/vutQWcJq/7nDHRliap2/Wei7tt/AdJJhmQioqumAAAAAElFTkSuQmCC',
+    path: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAADhSURBVDjLdZOxDsIwDET9n11ZEBsfQNWRpSPd+wEVfGHQRXrVcS1DlNjxnX12UpdhaM/p0V7z3O63a1/LsrRpHPsuW2d2/PgKI4NE6mAlws8SthxMNTp7kJNS1YFADt9dSsohRqtgk/FZ159eEJQyRAamcCpAYNlnEt7b1s/Zs0KzgCLgEgBSyEqCXYJfennZvJRFXCUgR+kVAlR1xFVmoPSchHfeG18+GpeTWRMon+4rNUGkSgA58PCUk9kXpP4+fJT9Jf5rlOv28WZvipL9KefYRJCJ9r9AkJfp2c7+iO9fL5mBBa8iorMAAAAASUVORK5CYII='
   };
   var BUILD3D_TEX = {
     grass_top: 'grass.png', dirt: 'dirt.png', planks: 'planks_oak.png', log: 'log_oak.png',
@@ -2566,20 +2568,45 @@
     var group = new THREE.Group();
     var geo = new THREE.BoxGeometry(1, 1, 1);
     var span = MW_GRID * MW_PLOT;
-    // Grasgrundst\u00fcck + Erdrand darunter
+    var mid = Math.floor(span / 2);
+    // Grasgrundst\u00fcck
     for (var gx = 0; gx < span; gx++) {
       for (var gz = 0; gz < span; gz++) {
-        var gcube = new THREE.Mesh(geo, mat('grass_top'));
+        var isPath = (gz === mid || gx === mid);
+        var gcube = new THREE.Mesh(geo, mat(isPath ? 'path' : 'grass_top'));
         gcube.position.set(gx, 0, gz); gcube.receiveShadow = true;
         group.add(gcube);
       }
+    }
+    // Baum-Helfer
+    function addTree(tx, tz) {
+      for (var y = 1; y <= 3; y++) {
+        var trunk = new THREE.Mesh(geo, mat('log'));
+        trunk.position.set(tx, y, tz); trunk.castShadow = true; group.add(trunk);
+      }
+      var crown = [[4, 2], [5, 1], [6, 0]]; // [Höhe, Radius]
+      crown.forEach(function (c) {
+        var y = c[0], r = c[1];
+        for (var dx = -r; dx <= r; dx++) for (var dz = -r; dz <= r; dz++) {
+          if (Math.abs(dx) + Math.abs(dz) > r + (y === 4 ? 1 : 0)) continue;
+          var leaf = new THREE.Mesh(geo, mat('leaves'));
+          leaf.position.set(tx + dx, y, tz + dz); leaf.castShadow = true; group.add(leaf);
+        }
+      });
+    }
+    // Baumring an den Rändern (nicht auf Wegen)
+    for (var i = 2; i < span - 2; i += 4) {
+      [[i, 1], [i, span - 2], [1, i], [span - 2, i]].forEach(function (t) {
+        if (t[0] === mid || t[1] === mid) return;
+        addTree(t[0], t[1]);
+      });
     }
     // gebaute H\u00e4user auf ihren Pl\u00e4tzen
     (state.worldPlacements || []).forEach(function (p) {
       var model = HOUSE_MODELS[p.id] || HOUSE_MODELS.starter;
       var offx = p.sx * MW_PLOT + 2, offz = p.sz * MW_PLOT + 2;
       model.forEach(function (a) {
-        if (a[1] < 1) return; // Boden ist schon das Grundst\u00fcck
+        if (a[1] < 1) return;
         var cube = new THREE.Mesh(geo, mat(a[3]));
         cube.position.set(a[0] + offx, a[1], a[2] + offz);
         cube.castShadow = true; cube.receiveShadow = true;
