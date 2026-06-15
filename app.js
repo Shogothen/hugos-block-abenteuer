@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 54;
-  var AUDIO_VER = '?v=54';
+  var APP_V = 55;
+  var AUDIO_VER = '?v=55';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2718,9 +2718,9 @@
       }
     });
     if (changed) saveState();
-    // DIAGNOSE (temporär): zeigt, welche Begleiter erkannt wurden
+    // DIAGNOSE (temporär): Version + Begleiter-Status
     var unlockedPets = Object.keys(state.pets || {}).filter(function (k) { return state.pets[k]; });
-    var diag = 'Begleiter: [' + unlockedPets.join(',') + '] | Tiere in Welt: ' + (state.worldAnimals || []).length;
+    var diag = 'v' + APP_V + ' | Begleiter: [' + unlockedPets.join(',') + '] | Tiere: ' + (state.worldAnimals || []).length;
     $('myworld-hint').textContent = diag;
     (state.worldAnimals || []).forEach(function (an) {
       if (!MOB_MODELS[an.kind]) return;
