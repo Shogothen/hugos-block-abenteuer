@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 40;
-  var AUDIO_VER = '?v=40';
+  var APP_V = 41;
+  var AUDIO_VER = '?v=41';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
