@@ -7,7 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 24;
+  var APP_V = 25;
+  var AUDIO_VER = '?v=25';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -931,7 +932,7 @@
   (function loadIntroBuffer() {
     if (typeof fetch === 'undefined') return;
     try {
-      fetch(AUDIO_BASE + 'intro.mp3')
+      fetch(AUDIO_BASE + 'intro.mp3' + AUDIO_VER, { cache: 'reload' })
         .then(function (r) { return r.arrayBuffer(); })
         .then(function (buf) {
           var c = Sound.ctx ? Sound.ctx() : null;
@@ -972,7 +973,7 @@
     // Fallback, falls WebAudio-Decode (noch) fehlt: HTML-Audio im Gesten-Kontext
     try {
       if (!introHtml) {
-        introHtml = new Audio(AUDIO_BASE + 'intro.mp3');
+        introHtml = new Audio(AUDIO_BASE + 'intro.mp3' + AUDIO_VER);
         introHtml.volume = 0.6;
         introHtml.onended = function () { introDone = true; introHtml = null; };
       }
@@ -2909,7 +2910,7 @@
     catch (e) { diagLine('Beep-Fehler: ' + e.name, false); }
     // 3) Datei laden
     if (typeof fetch === 'undefined') { diagLine('fetch fehlt', false); return; }
-    fetch(AUDIO_BASE + 'intro.mp3').then(function (r) {
+    fetch(AUDIO_BASE + 'intro.mp3' + AUDIO_VER, { cache: 'reload' }).then(function (r) {
       diagLine('Datei: HTTP ' + r.status, r.ok);
       if (!r.ok) return null;
       return r.arrayBuffer();
@@ -2928,7 +2929,7 @@
         } catch (e) { diagLine('WebAudio-Start-Fehler: ' + e.name, false); }
       }, function (err) {
         diagLine('Dekodier-Fehler: ' + (err && err.message ? err.message : 'unbekannt'), false);
-        var h = new Audio(AUDIO_BASE + 'intro.mp3');
+        var h = new Audio(AUDIO_BASE + 'intro.mp3' + AUDIO_VER);
         h.volume = 0.6;
         var p = h.play();
         if (p && p.then) p.then(function () { diagLine('HTML-Audio spielt - hoerst du Musik?', true); setTimeout(function(){ h.pause(); }, 4000); })
