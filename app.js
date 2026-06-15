@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 44;
-  var AUDIO_VER = '?v=44';
+  var APP_V = 45;
+  var AUDIO_VER = '?v=45';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -3680,6 +3680,15 @@
     renderToggles();
     if (state.settings.autoSpeak) speak('Vorlesen ist an.');
     else { try { window.speechSynthesis.cancel(); } catch (e) {} }
+  });
+
+  $('btn-test-res').addEventListener('click', function () {
+    RES_KEYS.forEach(function (k) { state.res[k] = 50; });
+    saveState();
+    Sound.mine();
+    var btn = $('btn-test-res');
+    setBtnLabel('btn-test-res', 'Erledigt! Alle auf 50');
+    setTimeout(function () { setBtnLabel('btn-test-res', 'Test: +50 Rohstoffe'); }, 1500);
   });
 
   $('btn-parent-reset').addEventListener('click', function () {
