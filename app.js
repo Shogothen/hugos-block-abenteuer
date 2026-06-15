@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 46;
-  var AUDIO_VER = '?v=46';
+  var APP_V = 47;
+  var AUDIO_VER = '?v=47';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -399,6 +399,7 @@
       building: null,
       buildProject: null,
       builtProjects: {},
+      worldPlacements: [],
       pets: {},
       activePet: null,
       trophies: {},
@@ -433,6 +434,7 @@
       s.daily = old.daily || { date: '', rounds: 0 };
       s.buildProject = old.buildProject || null;
       s.builtProjects = old.builtProjects || {};
+      s.worldPlacements = old.worldPlacements || [];
       if (!s.biome) s.biome = 'forest';
       if (!s.difficulty) s.difficulty = 'leicht';
       if (!s.house || s.house < 1) s.house = 1;
@@ -1129,10 +1131,11 @@
 
   // ---------- Screen management ----------
   var screens = ['screen-start', 'screen-practice', 'screen-home', 'screen-forge',
-    'screen-pets', 'screen-trophies', 'screen-worldmap', 'screen-parent', 'screen-build'];
+    'screen-pets', 'screen-trophies', 'screen-worldmap', 'screen-parent', 'screen-build', 'screen-myworld'];
   function show(id) {
     if (id !== 'screen-start') stopIntro();
     if (id !== 'screen-build') build3dStop();
+    if (id !== 'screen-myworld') myWorldStop();
     screens.forEach(function (s) { $(s).classList.toggle('active', s === id); });
     var block = (id === 'screen-practice')
       ? ASSETS.blocks[biomeById(state.biome).blockKey]
@@ -2390,10 +2393,25 @@
     if (done) {
       state.builtProjects = state.builtProjects || {};
       state.builtProjects[b3d.modelId] = true;
+      // Haus auf n\u00e4chsten freien Platz in der Welt stellen
+      placeHouseInWorld(b3d.modelId);
       saveState();
       Sound.levelup();
-      say('haus_2', 'Super! Du hast das Haus gebaut!');
+      say('haus_2', 'Super! Du hast das Haus gebaut! Es steht jetzt in deiner Welt!');
     }
+  }
+
+  function placeHouseInWorld(houseId) {
+    state.worldPlacements = state.worldPlacements || [];
+    var slots = myWorldSlots();
+    var used = {};
+    state.worldPlacements.forEach(function (p) { used[p.sx + ',' + p.sz] = true; });
+    var free = null;
+    for (var i = 0; i < slots.length; i++) {
+      if (!used[slots[i].sx + ',' + slots[i].sz]) { free = slots[i]; break; }
+    }
+    if (!free) free = slots[0]; // alle belegt: ersten Platz \u00fcberschreiben (selten)
+    state.worldPlacements.push({ id: houseId, sx: free.sx, sz: free.sz });
   }
 
   function setupBuild3dInput(canvas) {
@@ -2452,6 +2470,161 @@
       b3d.ghostMeshes.forEach(function (gm) { gm.material.opacity = op; });
     }
     b3d.renderer.render(b3d.scene, b3d.camera);
+  }
+
+  // ---------- Meine Welt (3D-Grundst\u00fcck mit gebauten H\u00e4usern) ----------
+  var mw3d = null;
+  var MW_PLOT = 11;      // Felder pro Platz
+  var MW_GRID = 2;       // 2x2 Raster (Performance-schonend)
+  function myWorldSlots() {
+    var slots = [];
+    for (var sz = 0; sz < MW_GRID; sz++) for (var sx = 0; sx < MW_GRID; sx++) slots.push({ sx: sx, sz: sz });
+    return slots;
+  }
+
+  function myWorldStart() {
+    var wrap = $('myworld-wrap');
+    var placements = state.worldPlacements || [];
+    if (placements.length === 0) {
+      wrap.style.display = 'none';
+      $('myworld-empty').style.display = 'block';
+      return;
+    }
+    $('myworld-empty').style.display = 'none';
+    wrap.style.display = 'block';
+    $('myworld-hint').textContent = '3D wird geladen ...';
+    loadThree(function () {
+      $('myworld-hint').textContent = 'Mit dem Finger drehen';
+      myWorldInit();
+    });
+  }
+  function myWorldStop() {
+    var wrap = $('myworld-wrap');
+    if (wrap) wrap.style.display = 'none';
+    if (mw3d && mw3d.raf) cancelAnimationFrame(mw3d.raf);
+    if (mw3d && mw3d.renderer && mw3d.renderer.dispose) mw3d.renderer.dispose();
+    mw3d = null;
+  }
+
+  function myWorldInit() {
+    var THREE = window.THREE;
+    var canvas = $('myworld-canvas');
+    var wrap = $('myworld-wrap');
+    var W = wrap.clientWidth || Math.min(window.innerWidth, 760);
+    var H = Math.min(window.innerHeight * 0.62, 520);
+    var scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0xdfeeff, 40, 90);
+    var camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 300);
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
+
+    var skyGeo = new THREE.SphereGeometry(140, 16, 16);
+    var skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      uniforms: { top: { value: new THREE.Color(0x7ec0ee) }, bot: { value: new THREE.Color(0xeaf6ff) } },
+      vertexShader: 'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+      fragmentShader: 'varying vec3 p;uniform vec3 top;uniform vec3 bot;void main(){float h=normalize(p).y*0.5+0.5;gl_FragColor=vec4(mix(bot,top,h),1.0);}'
+    });
+    scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x88aa77, 0.55));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    var sun = new THREE.DirectionalLight(0xfff4e0, 0.95);
+    sun.position.set(20, 36, 16); sun.castShadow = true;
+    sun.shadow.mapSize.width = 1024; sun.shadow.mapSize.height = 1024;
+    sun.shadow.camera.left = -30; sun.shadow.camera.right = 30;
+    sun.shadow.camera.top = 30; sun.shadow.camera.bottom = -30;
+    sun.shadow.camera.near = 1; sun.shadow.camera.far = 100;
+    scene.add(sun);
+
+    var loader = new THREE.TextureLoader();
+    var matCache = {};
+    var FALLBACK = {
+      grass_top: 0x6aa84f, dirt: 0x8b5a2b, planks: 0xb8895a, log: 0x6b4f2a,
+      stripped: 0xc8a06a, stone: 0x9a9a9a, cobble: 0x888888, glass: 0xadd8e6,
+      door_low: 0x7a5a30, door_up: 0x7a5a30, glow: 0xffd27a, slab: 0xb0b0b0
+    };
+    function mat(name) {
+      if (matCache[name]) return matCache[name];
+      var glass = (name === 'glass');
+      var m = new THREE.MeshStandardMaterial({
+        color: FALLBACK[name] || 0xcccccc, roughness: 0.95, metalness: 0.0,
+        transparent: glass, opacity: glass ? 0.55 : 1.0,
+        emissive: (name === 'glow') ? new THREE.Color(0xffd27a) : new THREE.Color(0x000000),
+        emissiveIntensity: (name === 'glow') ? 0.8 : 0
+      });
+      matCache[name] = m;
+      var uri = BUILD3D_DATA[name];
+      if (uri) loader.load(uri, function (t) { t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding; m.map = t; m.color.set(0xffffff); m.needsUpdate = true; });
+      return m;
+    }
+
+    var group = new THREE.Group();
+    var geo = new THREE.BoxGeometry(1, 1, 1);
+    var span = MW_GRID * MW_PLOT;
+    // Grasgrundst\u00fcck + Erdrand darunter
+    for (var gx = 0; gx < span; gx++) {
+      for (var gz = 0; gz < span; gz++) {
+        var gcube = new THREE.Mesh(geo, mat('grass_top'));
+        gcube.position.set(gx, 0, gz); gcube.receiveShadow = true;
+        group.add(gcube);
+      }
+    }
+    // gebaute H\u00e4user auf ihren Pl\u00e4tzen
+    (state.worldPlacements || []).forEach(function (p) {
+      var model = HOUSE_MODELS[p.id] || HOUSE_MODELS.starter;
+      var offx = p.sx * MW_PLOT + 2, offz = p.sz * MW_PLOT + 2;
+      model.forEach(function (a) {
+        if (a[1] < 1) return; // Boden ist schon das Grundst\u00fcck
+        var cube = new THREE.Mesh(geo, mat(a[3]));
+        cube.position.set(a[0] + offx, a[1], a[2] + offz);
+        cube.castShadow = true; cube.receiveShadow = true;
+        group.add(cube);
+      });
+    });
+    // zentrieren
+    group.position.set(-span / 2, -1, -span / 2);
+    var pivot = new THREE.Group(); pivot.add(group); scene.add(pivot);
+
+    mw3d = {
+      THREE: THREE, renderer: renderer, scene: scene, camera: camera, pivot: pivot,
+      rotY: 0.6, rotX: 0.62, auto: true, camDist: span * 1.7, camTarget: span * 1.4
+    };
+    myWorldInput(canvas);
+    myWorldLoop();
+  }
+
+  function myWorldInput(canvas) {
+    var dragging = false, lx = 0, ly = 0;
+    function down(x, y) { dragging = true; if (mw3d) mw3d.auto = false; lx = x; ly = y; }
+    function move(x, y) {
+      if (!dragging || !mw3d) return;
+      mw3d.rotY += (x - lx) * 0.01; mw3d.rotX += (y - ly) * 0.01;
+      mw3d.rotX = Math.max(0.15, Math.min(1.2, mw3d.rotX)); lx = x; ly = y;
+    }
+    function up() { dragging = false; }
+    canvas.addEventListener('mousedown', function (e) { down(e.clientX, e.clientY); });
+    window.addEventListener('mousemove', function (e) { move(e.clientX, e.clientY); });
+    window.addEventListener('mouseup', up);
+    canvas.addEventListener('touchstart', function (e) { var t = e.touches[0]; down(t.clientX, t.clientY); }, { passive: true });
+    canvas.addEventListener('touchmove', function (e) { var t = e.touches[0]; move(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    canvas.addEventListener('touchend', up);
+  }
+
+  function myWorldLoop() {
+    if (!mw3d) return;
+    mw3d.raf = requestAnimationFrame(myWorldLoop);
+    if (mw3d.auto) mw3d.rotY += 0.003;
+    mw3d.camDist += (mw3d.camTarget - mw3d.camDist) * 0.04;
+    mw3d.pivot.rotation.y = mw3d.rotY;
+    mw3d.pivot.rotation.x = mw3d.rotX;
+    mw3d.camera.position.set(0, mw3d.camDist * 0.5, mw3d.camDist);
+    mw3d.camera.lookAt(0, 0, 0);
+    mw3d.renderer.render(mw3d.scene, mw3d.camera);
   }
 
   // ---------- Bau-Modus: Bauplan wählen, dann geführt setzen ----------
@@ -3492,6 +3665,8 @@
   $('btn-start-home').addEventListener('click', function () { renderHome(); show('screen-home'); });
   $('btn-start-build').addEventListener('click', function () { renderBuild(); show('screen-build'); });
   $('btn-build-back').addEventListener('click', function () { build3dStop(); renderStart(); show('screen-start'); });
+  $('btn-start-myworld').addEventListener('click', function () { show('screen-myworld'); myWorldStart(); });
+  $('btn-myworld-back').addEventListener('click', function () { myWorldStop(); renderStart(); show('screen-start'); });
 
   $('btn-build-choose').addEventListener('click', function () {
     build3dStop();

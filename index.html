@@ -9,7 +9,7 @@
 <title>Hugos Block-Abenteuer</title>
 <link rel="icon" type="image/png" href="icon-180.png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=46">
+<link rel="stylesheet" href="style.css?v=47">
 </head>
 <body>
 
@@ -45,6 +45,10 @@
       <button id="btn-start-build" class="mc-btn menu-btn">
         <img class="btn-ico" src="assets/minecraft/blocks/grass.png" alt="">
         <span>Bauen</span>
+      </button>
+      <button id="btn-start-myworld" class="mc-btn menu-btn">
+        <img class="btn-ico" src="assets/minecraft/build/log_oak.png" alt="">
+        <span>Meine Welt</span>
       </button>
       <button id="btn-start-forge" class="mc-btn menu-btn">
         <img class="btn-ico" src="assets/minecraft/items/iron_sword.png" alt="">
@@ -223,6 +227,20 @@
   </div>
 </section>
 
+<section id="screen-myworld" class="screen">
+  <div class="build-bar">
+    <button id="btn-myworld-back" class="mc-btn small"><img class="btn-ico" src="assets/minecraft/mobs/steve_face.png" alt=""><span>Zur\u00fcck</span></button>
+    <div id="myworld-title" class="myworld-title">Meine Welt</div>
+  </div>
+  <div id="myworld-wrap" class="build3d-wrap">
+    <canvas id="myworld-canvas"></canvas>
+    <div id="myworld-hint" class="build3d-hint">Mit dem Finger drehen</div>
+  </div>
+  <div id="myworld-empty" class="myworld-empty" style="display:none">
+    Hier erscheinen deine Bauwerke! Geh zu "Bauen" und bau dein erstes Haus.
+  </div>
+</section>
+
 <section id="screen-parent" class="screen">
   <div class="mc-panel">
     <h2 class="subtitle">Elternbereich</h2>
@@ -397,6 +415,6 @@
   </div>
 </div>
 
-<script src="app.js?v=46"></script>
+<script src="app.js?v=47"></script>
 </body>
 </html>
