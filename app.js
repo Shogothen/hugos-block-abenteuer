@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 27;
-  var AUDIO_VER = '?v=27';
+  var APP_V = 30;
+  var AUDIO_VER = '?v=30';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -207,11 +207,11 @@
       introLine: 'Uaaargh!', defeatLine: '\u00d6h \u00f6h\u2026' },
     { id: 'skeleton', name: 'Skelett', src: ASSETS.mobs.skeleton, hpBonus: 1, unlockAt: 0,
       introLine: 'Klacker, klacker!', defeatLine: 'Klacker\u2026' },
-    { id: 'witch', name: 'Hexe', src: ASSETS.mobs.witch, hpBonus: 2, unlockAt: 5,
+    { id: 'witch', name: 'Hexe', src: ASSETS.mobs.witch, hpBonus: 2, unlockAt: 6,
       introLine: 'Hihihihi!', defeatLine: 'Meine Tr\u00e4nke!' },
-    { id: 'piglin', name: 'Piglin', src: ASSETS.mobs.piglin, hpBonus: 3, unlockAt: 12,
+    { id: 'piglin', name: 'Piglin', src: ASSETS.mobs.piglin, hpBonus: 3, unlockAt: 14,
       introLine: 'Grunz, grunz! Her mit dem Gold!', defeatLine: 'Mein Gold!' },
-    { id: 'ghast', name: 'Ghast', src: ASSETS.mobs.ghast, hpBonus: 4, unlockAt: 20,
+    { id: 'ghast', name: 'Ghast', src: ASSETS.mobs.ghast, hpBonus: 4, unlockAt: 24,
       introLine: 'Uuuuuuh!', defeatLine: 'Huhuuu\u2026' }
   ];
   function unlockedBosses() {
@@ -223,9 +223,9 @@
     { id: 'runde1', name: 'Erste Runde geschafft', icon: ASSETS.blocks.grass,
       prog: function (s) { return { cur: Math.min(s.stats.sessions, 1), max: 1 }; },
       cond: function (s) { return s.stats.sessions >= 1; } },
-    { id: 'richtig30', name: '30 Aufgaben richtig', icon: ASSETS.items.apple, pet: 'huhn',
-      prog: function (s) { return { cur: Math.min(s.stats.correct, 30), max: 30 }; },
-      cond: function (s) { return s.stats.correct >= 30; } },
+    { id: 'richtig30', name: '60 Aufgaben richtig', icon: ASSETS.items.apple, pet: 'huhn',
+      prog: function (s) { return { cur: Math.min(s.stats.correct, 60), max: 60 }; },
+      cond: function (s) { return s.stats.correct >= 60; } },
     { id: 'richtig100', name: '100 Aufgaben richtig', icon: ASSETS.items.iron_ingot,
       prog: function (s) { return { cur: Math.min(s.stats.correct, 100), max: 100 }; },
       cond: function (s) { return s.stats.correct >= 100; } },
@@ -238,9 +238,9 @@
     { id: 'boss1', name: 'Erster Boss besiegt', icon: ASSETS.mobs.creeper,
       prog: function (s) { return { cur: Math.min(s.stats.bossesDefeated, 1), max: 1 }; },
       cond: function (s) { return s.stats.bossesDefeated >= 1; } },
-    { id: 'boss5', name: '5 Bosse besiegt', icon: ASSETS.mobs.zombie, pet: 'katze',
-      prog: function (s) { return { cur: Math.min(s.stats.bossesDefeated, 5), max: 5 }; },
-      cond: function (s) { return s.stats.bossesDefeated >= 5; } },
+    { id: 'boss5', name: '8 Bosse besiegt', icon: ASSETS.mobs.zombie, pet: 'katze',
+      prog: function (s) { return { cur: Math.min(s.stats.bossesDefeated, 8), max: 8 }; },
+      cond: function (s) { return s.stats.bossesDefeated >= 8; } },
     { id: 'boss15', name: '15 Bosse besiegt', icon: ASSETS.mobs.skeleton, pet: 'wolf',
       prog: function (s) { return { cur: Math.min(s.stats.bossesDefeated, 15), max: 15 }; },
       cond: function (s) { return s.stats.bossesDefeated >= 15; } },
@@ -274,8 +274,8 @@
 
   // ---------- Core constants ----------
   var XP_PER_LEVEL = 100;
-  var STREAK_BONUS_EVERY = 5;
-  var STREAK_BONUS_XP = 5;
+  var STREAK_BONUS_EVERY = 20;
+  var STREAK_BONUS_XP = 3;
 
   var PICKAXES = [
     { src: A + 'items/wood_pickaxe.png', name: 'Holz-Spitzhacke' },
@@ -288,10 +288,10 @@
 
   var BIOMES = [
     { id: 'forest', name: 'Wald', blockKey: 'grass', minLevel: 1 },
-    { id: 'cave', name: 'H\u00f6hle', blockKey: 'stone', minLevel: 2 },
-    { id: 'desert', name: 'W\u00fcste', blockKey: 'sand', minLevel: 3 },
-    { id: 'snow', name: 'Schnee', blockKey: 'snowGrass', minLevel: 4 },
-    { id: 'nether', name: 'Nether', blockKey: 'netherrack', minLevel: 5 }
+    { id: 'cave', name: 'H\u00f6hle', blockKey: 'stone', minLevel: 3 },
+    { id: 'desert', name: 'W\u00fcste', blockKey: 'sand', minLevel: 5 },
+    { id: 'snow', name: 'Schnee', blockKey: 'snowGrass', minLevel: 7 },
+    { id: 'nether', name: 'Nether', blockKey: 'netherrack', minLevel: 10 }
   ];
   function biomeById(id) {
     for (var i = 0; i < BIOMES.length; i++) if (BIOMES[i].id === id) return BIOMES[i];
@@ -389,28 +389,29 @@
     return Math.min(10, h);
   }
   function swordDamage() {
-    var d = state.equip.schwert < 0 ? 1 : state.equip.schwert + 2;
+    // Faust=1, Holz=1, Stein=2, Eisen=3, Gold=4, Diamant=5 (vorher 2..6)
+    var d = state.equip.schwert < 0 ? 1 : state.equip.schwert + 1;
     if (petActive('wolf')) d += 1;
     return d;
   }
   function bossRotation() { return Math.floor(state.stats.bossesDefeated / 3); }
   function bossMaxHp(boss) {
-    return Math.min(4 + 3 * bossRotation() + (boss ? boss.hpBonus : 0), 18);
+    return Math.min(6 + 4 * bossRotation() + (boss ? boss.hpBonus : 0), 26);
   }
   function bossLoot() {
     var rot = bossRotation();
     var loot = {
       holz: 2,
-      stein: 3 + Math.min(rot, 5),
-      eisen: 2 + Math.min(rot, 4),
-      gold: 1 + Math.floor(rot / 2),
-      diamant: Math.max(1, Math.floor((rot + 1) / 2))
+      stein: Math.round((3 + Math.min(rot, 5)) * 0.65),
+      eisen: Math.round((2 + Math.min(rot, 4)) * 0.65),
+      gold: Math.round((1 + Math.floor(rot / 2)) * 0.65),
+      diamant: (state.stats.bossesDefeated % 4 === 0 && state.stats.bossesDefeated > 0) ? 1 : 0
     };
     if (state.house >= 6) RES_KEYS.forEach(function (k) { if (loot[k]) loot[k] *= 2; });
-    if (petActive('fuchs')) loot.diamant += 1;
+    if (petActive('fuchs') && state.stats.bossesDefeated % 4 === 0 && state.stats.bossesDefeated > 0) loot.diamant += 1;
     return loot;
   }
-  function bossXp(boss) { return 25 + 5 * bossRotation() + 3 * (boss ? boss.hpBonus : 0); }
+  function bossXp(boss) { return 16 + 4 * bossRotation() + 3 * (boss ? boss.hpBonus : 0); }
 
   // ---------- Helpers ----------
   function $(id) { return document.getElementById(id); }
@@ -1197,6 +1198,7 @@
       index: 0,
       phase: 'tasks',
       boss: pool[state.stats.sessions % pool.length],
+      bossThisRound: (state.stats.sessions % 2 === 0),
       bossHp: 0,
       bossMax: 0,
       bossDefeated: false,
@@ -1430,7 +1432,7 @@
       }
 
       var levelBefore = levelOf(state.xp);
-      var xp = session.firstTry ? 10 : 3;
+      var xp = session.firstTry ? 4 : 1;
       var bonusDiamond = false;
       var bonus = 0;
       if (session.firstTry && session.streak > 0 && session.streak % STREAK_BONUS_EVERY === 0) {
@@ -1444,11 +1446,16 @@
 
       var resKey = null;
       if (session.firstTry) {
-        resKey = rollResource(true);
-        earnResource(resKey, 1);
-        var target = $('fly-target-' + resKey) || $('hud-progress');
-        flyTo(btn, target, RES[resKey].src);
-        setTimeout(refreshAllResBars, 650);
+        session.dropProgress = (session.dropProgress || 0) + 1;
+        var dropEvery = petActive('schwein') ? 2 : 4;
+        if (session.dropProgress >= dropEvery) {
+          session.dropProgress = 0;
+          resKey = rollResource(true);
+          earnResource(resKey, 1);
+          var target = $('fly-target-' + resKey) || $('hud-progress');
+          flyTo(btn, target, RES[resKey].src);
+          setTimeout(refreshAllResBars, 650);
+        }
       }
       checkTrophies();
 
@@ -1702,7 +1709,8 @@
   function nextTask() {
     session.index++;
     if (session.phase === 'tasks' && session.index >= session.tasks.length) {
-      startBoss();
+      if (session.bossThisRound) startBoss();
+      else maybeLevelUp(function () { drainCeremonies(showSummary); });
     } else {
       renderTask();
     }
