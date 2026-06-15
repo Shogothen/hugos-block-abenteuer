@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 26;
-  var AUDIO_VER = '?v=26';
+  var APP_V = 27;
+  var AUDIO_VER = '?v=27';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -836,7 +836,7 @@
 
   // Robust audio unlock: revive the context on every interaction (iOS suspends it)
   ['pointerdown', 'touchend', 'mousedown', 'keydown'].forEach(function (ev) {
-    document.addEventListener(ev, function () { Sound.unlock(); unlockVoice(); tryStartIntro(); }, { passive: true });
+    document.addEventListener(ev, function () { Sound.unlock(); unlockVoice(); }, { passive: true });
   });
 
   // UI click sound via delegation (answers play their own feedback sounds)
@@ -981,10 +981,6 @@
       if (p && p.then) p.then(function () { introDone = true; introWanted = false; }).catch(function () {});
     } catch (e) {}
   }
-  ['click', 'touchend', 'pointerup'].forEach(function (ev) {
-    document.addEventListener(ev, tryStartIntro, { passive: true });
-  });
-
   function stopIntro() {
     introDone = true;
     introWanted = false;
@@ -1408,9 +1404,7 @@
     $('reward-banner').classList.remove('show');
     if (session.greet) {
       session.greet = false;
-      say('greet', 'Los geht\u2019s, ' + state.playerName + '!', function () { autoSpeak(t.speak, 200); });
-    } else {
-      autoSpeak(t.speak, 350);
+      say('greet', 'Los geht\u2019s, ' + state.playerName + '!');
     }
   }
 
@@ -1963,7 +1957,11 @@
   });
 
   // ---------- Vorlesen ----------
-  $('btn-speak').addEventListener('click', function () { speak(currentTask().speak); });
+  $('btn-speak').addEventListener('click', function () {
+    Sound.click();
+    var t = currentTask();
+    speak(t ? t.speak : '');
+  });
 
   // ---------- Blueprint rendering (mit Geister-Bloecken) ----------
   function renderBlueprint(container, stage, cellSize, animate, placedCount) {
