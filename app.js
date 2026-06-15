@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 25;
-  var AUDIO_VER = '?v=25';
+  var APP_V = 26;
+  var AUDIO_VER = '?v=26';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -897,7 +897,7 @@
   }
 
   // ---------- Sprach-Clips (eingesprochene Audio-Dateien, TTS-Fallback) ----------
-  var AUDIO_BASE = 'assets/voice/';
+  var AUDIO_BASE = 'assets/audio/';
   var NAME_CLIPS = {};
   ['greet', 'hallo', 'praise_super', 'praise_stark', 'boss_intro', 'boss_win']
     .forEach(function (c) { NAME_CLIPS[c] = true; });
