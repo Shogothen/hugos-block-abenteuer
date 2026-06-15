@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 37;
-  var AUDIO_VER = '?v=37';
+  var APP_V = 38;
+  var AUDIO_VER = '?v=38';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2230,7 +2230,9 @@
     scene.add(sun);
 
     var loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
     var matCache = {};
+    var texErrors = 0;
     function mat(name) {
       if (matCache[name]) return matCache[name];
       var glass = (name === 'glass');
@@ -2241,12 +2243,21 @@
         emissiveIntensity: (name === 'glow') ? 0.8 : 0
       });
       matCache[name] = m;
-      loader.load(A + 'build/' + BUILD3D_TEX[name] + AUDIO_VER, function (t) {
-        t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter;
-        if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding;
-        m.map = t;
-        m.needsUpdate = true;
-      });
+      loader.load(
+        A + 'build/' + BUILD3D_TEX[name],
+        function (t) {
+          t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter;
+          if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding;
+          m.map = t;
+          m.color.set(0xffffff);
+          m.needsUpdate = true;
+        },
+        undefined,
+        function () {
+          texErrors++;
+          $('build3d-hint').textContent = 'Textur fehlt: ' + BUILD3D_TEX[name];
+        }
+      );
       return m;
     }
 
