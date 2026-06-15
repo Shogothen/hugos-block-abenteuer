@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 30;
-  var AUDIO_VER = '?v=30';
+  var APP_V = 36;
+  var AUDIO_VER = '?v=36';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -293,6 +293,92 @@
     { id: 'snow', name: 'Schnee', blockKey: 'snowGrass', minLevel: 7 },
     { id: 'nether', name: 'Nether', blockKey: 'netherrack', minLevel: 10 }
   ];
+  var DECO = A + 'deco/';
+  // Bau-Palette: jeder Eintrag kostet Ressourcen. Erst freischalten (kaufen), dann frei platzieren.
+  var BUILD_ITEMS = [
+    { id: 'wool_white', cat: 'block',  src: DECO + 'wool_colored_white.png',  name: 'Wei\u00dfe Wolle', cost: { holz: 1 } },
+    { id: 'wool_red', cat: 'block',    src: DECO + 'wool_colored_red.png',    name: 'Rote Wolle',    cost: { holz: 1 } },
+    { id: 'wool_blue', cat: 'block',   src: DECO + 'wool_colored_blue.png',   name: 'Blaue Wolle',   cost: { holz: 1 } },
+    { id: 'wool_yellow', cat: 'block', src: DECO + 'wool_colored_yellow.png', name: 'Gelbe Wolle',   cost: { holz: 1 } },
+    { id: 'wool_green', cat: 'block',  src: DECO + 'wool_colored_green.png',  name: 'Gr\u00fcne Wolle',  cost: { holz: 1 } },
+    { id: 'wool_pink', cat: 'block',   src: DECO + 'wool_colored_pink.png',   name: 'Rosa Wolle',    cost: { holz: 1 } },
+    { id: 'wool_orange', cat: 'block', src: DECO + 'wool_colored_orange.png', name: 'Orange Wolle',  cost: { holz: 1 } },
+    { id: 'wool_purple', cat: 'block', src: DECO + 'wool_colored_purple.png', name: 'Lila Wolle',    cost: { holz: 1 } },
+    { id: 'wool_lime', cat: 'block',   src: DECO + 'wool_colored_lime.png',   name: 'Hellgr\u00fcn',     cost: { holz: 1 } },
+    { id: 'wool_cyan', cat: 'block',   src: DECO + 'wool_colored_cyan.png',   name: 'T\u00fcrkis',       cost: { holz: 1 } },
+    { id: 'glass', cat: 'block',       src: DECO + 'glass.png',               name: 'Glas',          cost: { stein: 1 } },
+    { id: 'hay', cat: 'block',         src: DECO + 'hay_block_side.png',      name: 'Heuballen',     cost: { holz: 2 } },
+    { id: 'pumpkin', cat: 'block',     src: DECO + 'pumpkin_side.png',        name: 'K\u00fcrbis',       cost: { holz: 2 } },
+    { id: 'melon', cat: 'block',       src: DECO + 'melon_side.png',          name: 'Melone',        cost: { holz: 2 } },
+    { id: 'flower_rose', cat: 'ground', src: DECO + 'flower_rose.png',         name: 'Rose',          cost: { holz: 1 } },
+    { id: 'flower_tulip', cat: 'ground',src: DECO + 'flower_tulip_pink.png',   name: 'Tulpe',         cost: { holz: 1 } },
+    { id: 'flower_dande', cat: 'ground',src: DECO + 'flower_dandelion.png',    name: 'L\u00f6wenzahn',    cost: { holz: 1 } },
+    { id: 'flower_orchid', cat: 'ground',src: DECO + 'flower_blue_orchid.png', name: 'Orchidee',      cost: { holz: 1 } },
+    { id: 'flower_allium', cat: 'ground',src: DECO + 'flower_allium.png',      name: 'Allium',        cost: { holz: 1 } },
+    { id: 'sunflower', cat: 'ground',   src: DECO + 'double_plant_sunflower_front.png', name: 'Sonnenblume', cost: { holz: 2 } },
+    { id: 'sapling', cat: 'ground',     src: DECO + 'sapling_oak.png',         name: 'B\u00e4umchen',     cost: { holz: 2 } },
+    { id: 'mushroom_red', cat: 'ground',src: DECO + 'mushroom_red.png',        name: 'Roter Pilz',    cost: { holz: 1 } },
+    { id: 'mushroom_brown', cat: 'ground',src: DECO + 'mushroom_brown.png',    name: 'Brauner Pilz',  cost: { holz: 1 } },
+    { id: 'torch', cat: 'furniture',       src: DECO + 'torch_on.png',            name: 'Fackel',        cost: { holz: 1 } },
+    { id: 'glowstone', cat: 'block',   src: DECO + 'glowstone.png',           name: 'Leuchtstein',   cost: { gold: 1 } },
+    { id: 'bookshelf', cat: 'furniture',   src: DECO + 'bookshelf.png',           name: 'B\u00fccherregal',  cost: { holz: 3 } },
+    { id: 'chest', cat: 'furniture',       src: DECO + 'chest_front.png',         name: 'Truhe',         cost: { holz: 3 } },
+    { id: 'crafting', cat: 'furniture',    src: DECO + 'crafting_table_front.png',name: 'Werkbank',      cost: { holz: 3 } },
+    { id: 'jack', cat: 'furniture',        src: DECO + 'pumpkin_face_on.png',     name: 'K\u00fcrbislaterne', cost: { gold: 1 } },
+    { id: 'cake', cat: 'furniture',        src: DECO + 'cake_side.png',           name: 'Kuchen',        cost: { holz: 2 } },
+    { id: 'barrel', cat: 'furniture',      src: DECO + 'barrel_side.png',         name: 'Fass',          cost: { holz: 2 } },
+    { id: 'beacon', cat: 'block',      src: DECO + 'beacon.png',              name: 'Leuchtfeuer',   cost: { diamant: 1 } }
+  ];
+  function buildItemById(id) {
+    for (var i = 0; i < BUILD_ITEMS.length; i++) if (BUILD_ITEMS[i].id === id) return BUILD_ITEMS[i];
+    return null;
+  }
+  var BUILD_COLS = 12, BUILD_ROWS = 7;
+
+  // ---------- Baupläne (geführtes Bauen) ----------
+  var BUILD_TEX = {
+    G: 'grass.png', D: 'dirt.png', o: 'planks_oak.png', L: 'log_oak.png', P: 'log_oak_top.png',
+    c: 'cobblestone.png', M: 'cobblestone_mossy.png', s: 'stonebrick.png', S: 'stonebrick_mossy.png',
+    g: 'glass.png', b: 'brick.png', a: 'sandstone_normal.png', n: 'sand.png',
+    w: 'water_still_blue.png', t: 'torch_on.png', f: 'furnace_front_off.png', k: 'crafting_table_front.png',
+    h: 'bookshelf.png', r: 'wool_colored_red.png', W: 'wool_colored_white.png',
+    T: 'door_wood_lower.png', U: 'door_wood_upper.png', e: 'glowstone.png',
+    x: 'stripped_oak_log.png', q: 'log_spruce.png', v: 'stone_slab_side.png'
+  };
+  var BUILD_NAMES = {
+    o: 'Holz', L: 'Stamm', c: 'Stein', M: 'Moos-Stein', s: 'Steinziegel', g: 'Glas', b: 'Ziegel',
+    a: 'Sandstein', n: 'Sand', w: 'Wasser', t: 'Fackel', f: 'Ofen', k: 'Werkbank', h: 'B\u00fccherregal',
+    r: 'Rote Wolle', W: 'Wei\u00dfe Wolle', T: 'T\u00fcr', e: 'Leuchtstein',
+    x: 'Stamm', v: 'Dachstein'
+  };
+  var BLUEPRINTS = [
+    { id: 'starter', name: 'Eichenhaus', cost: { holz: 8 },
+      grid: ['....v....', '...vooo..', '..voooov.', '.LoooooL.', '.LgxxxgL.', '.LgTggtL.', 'GGGGGGGGG', 'DDDDDDDDD'] },
+    { id: 'stone', name: 'Steinhaus', cost: { holz: 4, stein: 6 },
+      grid: ['...vvv...', '..vsssv..', '.vsgggsv.', '.LsgggsL.', '.LcTgfcL.', 'GGGGGGGGG', 'DDDDDDDDD'] },
+    { id: 'tower', name: 'Wachturm', cost: { stein: 8, gold: 1 },
+      grid: ['..vssv..', '..LeeL..', '..sggs..', '..LxxL..', '..sggs..', '..LTcL..', 'GGGGGGGG', 'DDDDDDDD'] },
+    { id: 'porch', name: 'Veranda-Haus', cost: { holz: 6, stein: 2 },
+      grid: ['..vvvv...', '.voooov..', '.LgxxgL..', '.LgTtgLL.', 'GGGGGGGGG', 'DDDDDDDDD'] }
+  ];
+  function blueprintById(id) {
+    for (var i = 0; i < BLUEPRINTS.length; i++) if (BLUEPRINTS[i].id === id) return BLUEPRINTS[i];
+    return null;
+  }
+  // Zellen, die fester Untergrund sind (vorgegeben, nicht zu bauen)
+  function isGroundChar(ch) { return ch === 'G' || ch === 'D' || ch === 'n' || ch === 'w'; }
+  // Liste der baubaren Zellen eines Plans, von unten nach oben
+  function buildableCells(bp) {
+    var cells = [];
+    for (var r = bp.grid.length - 1; r >= 0; r--) {
+      for (var c = 0; c < bp.grid[r].length; c++) {
+        var ch = bp.grid[r][c];
+        if (ch !== '.' && ch !== ' ' && !isGroundChar(ch)) cells.push({ c: c, r: r, ch: ch });
+      }
+    }
+    return cells;
+  }
+
   function biomeById(id) {
     for (var i = 0; i < BIOMES.length; i++) if (BIOMES[i].id === id) return BIOMES[i];
     return BIOMES[0];
@@ -311,6 +397,8 @@
       equip: { schwert: -1, helm: -1, brust: -1, hose: -1, stiefel: -1 },
       house: 1,
       building: null,
+      buildProject: null,
+      builtProjects: {},
       pets: {},
       activePet: null,
       trophies: {},
@@ -343,6 +431,8 @@
       s.seen.pets = s.seen.pets || {};
       s.seen.trophies = s.seen.trophies || {};
       s.daily = old.daily || { date: '', rounds: 0 };
+      s.buildProject = old.buildProject || null;
+      s.builtProjects = old.builtProjects || {};
       if (!s.biome) s.biome = 'forest';
       if (!s.difficulty) s.difficulty = 'leicht';
       if (!s.house || s.house < 1) s.house = 1;
@@ -1039,9 +1129,10 @@
 
   // ---------- Screen management ----------
   var screens = ['screen-start', 'screen-practice', 'screen-home', 'screen-forge',
-    'screen-pets', 'screen-trophies', 'screen-worldmap', 'screen-parent'];
+    'screen-pets', 'screen-trophies', 'screen-worldmap', 'screen-parent', 'screen-build'];
   function show(id) {
     if (id !== 'screen-start') stopIntro();
+    if (id !== 'screen-build') build3dStop();
     screens.forEach(function (s) { $(s).classList.toggle('active', s === id); });
     var block = (id === 'screen-practice')
       ? ASSETS.blocks[biomeById(state.biome).blockKey]
@@ -2026,7 +2117,381 @@
       state.building ? state.building.placed : undefined);
   }
 
+  // ---------- Bau-Modus (freies Gestalten) ----------
+  // ---------- 3D-Bau-Modul (three.js, lazy geladen) ----------
+  var THREE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  var threeLoading = false, threeReady = false, threeWaiters = [];
+  function loadThree(cb) {
+    if (threeReady) { cb(); return; }
+    threeWaiters.push(cb);
+    if (threeLoading) return;
+    threeLoading = true;
+    var s = document.createElement('script');
+    s.src = THREE_URL;
+    s.onload = function () {
+      threeReady = true;
+      threeWaiters.forEach(function (f) { f(); });
+      threeWaiters = [];
+    };
+    s.onerror = function () {
+      threeLoading = false;
+      $('build3d-hint').textContent = '3D konnte nicht geladen werden (Internet?)';
+    };
+    document.head.appendChild(s);
+  }
+
+  var BUILD3D_TEX = {
+    grass_top: 'grass.png', dirt: 'dirt.png', planks: 'planks_oak.png', log: 'log_oak.png',
+    stripped: 'stripped_oak_log.png', stone: 'stonebrick.png', cobble: 'cobblestone.png',
+    glass: 'glass.png', door_low: 'door_wood_lower.png', door_up: 'door_wood_upper.png',
+    glow: 'glowstone.png', slab: 'stone_slab_side.png'
+  };
+
+  // Voxel-Haus (gleiches Modell wie der abgenommene Prototyp v4)
+  function houseVoxels() {
+    var b = [];
+    function add(x, y, z, t) { b.push({ x: x, y: y, z: z, t: t }); }
+    var N = 7;
+    for (var x = -2; x < N + 2; x++) for (var z = -2; z < N + 2; z++) { add(x, 0, z, 'grass_top'); add(x, -1, z, 'dirt'); }
+    for (var y = 1; y < 4; y++) for (var x2 = 0; x2 < N; x2++) for (var z2 = 0; z2 < N; z2++) {
+      var edge = x2 === 0 || x2 === N - 1 || z2 === 0 || z2 === N - 1;
+      if (!edge) continue;
+      var corner = (x2 === 0 || x2 === N - 1) && (z2 === 0 || z2 === N - 1);
+      if (z2 === 0 && x2 === 3 && (y === 1 || y === 2)) continue;
+      if (y === 2 && !corner && (((z2 === 0 || z2 === N - 1) && (x2 === 2 || x2 === 4)) || ((x2 === 0 || x2 === N - 1) && (z2 === 2 || z2 === 4)))) { add(x2, y, z2, 'glass'); continue; }
+      add(x2, y, z2, corner ? 'log' : (y === 2 ? 'stripped' : 'planks'));
+    }
+    add(3, 1, 0, 'door_low'); add(3, 2, 0, 'door_up');
+    function ring(y, ins, t) { var lo = ins, hi = N - 1 - ins; for (var x = lo; x <= hi; x++) for (var z = lo; z <= hi; z++) if (x === lo || x === hi || z === lo || z === hi) add(x, y, z, t); }
+    ring(4, 0, 'slab'); ring(5, 1, 'stone'); ring(6, 2, 'stone'); add(3, 7, 3, 'stone');
+    add(1, 5, 1, 'cobble'); add(1, 6, 1, 'cobble'); add(1, 7, 1, 'cobble');
+    add(5, 1, -1, 'glow');
+    return b;
+  }
+
+  var b3d = null; // { renderer, scene, camera, pivot, raf, rotY, rotX, auto, camDist }
+  function setBtnLabel(id, txt) {
+    var btn = $(id);
+    if (!btn) return;
+    var span = btn.querySelector ? btn.querySelector('span') : null;
+    if (span) span.textContent = txt; else btn.textContent = txt;
+  }
+
+  function build3dStart() {
+    var wrap = $('build3d-wrap');
+    wrap.style.display = 'block';
+    $('build3d-hint').textContent = '3D wird geladen ...';
+    loadThree(function () {
+      $('build3d-hint').textContent = 'Mit dem Finger drehen';
+      build3dInit();
+    });
+  }
+  function build3dStop() {
+    $('build3d-wrap').style.display = 'none';
+    if (b3d && b3d.raf) cancelAnimationFrame(b3d.raf);
+    if (b3d && b3d.renderer) { b3d.renderer.dispose && b3d.renderer.dispose(); }
+    b3d = null;
+  }
+
+  function build3dInit() {
+    var THREE = window.THREE;
+    var canvas = $('build3d-canvas');
+    var wrap = $('build3d-wrap');
+    var W = wrap.clientWidth || Math.min(window.innerWidth, 760);
+    var H = Math.min(window.innerHeight * 0.62, 520);
+    var scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0xdfeeff, 22, 48);
+    var camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 200);
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
+
+    // Himmel-Dome mit Verlauf
+    var skyGeo = new THREE.SphereGeometry(90, 16, 16);
+    var skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      uniforms: { top: { value: new THREE.Color(0x7ec0ee) }, bot: { value: new THREE.Color(0xeaf6ff) } },
+      vertexShader: 'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+      fragmentShader: 'varying vec3 p;uniform vec3 top;uniform vec3 bot;void main(){float h=normalize(p).y*0.5+0.5;gl_FragColor=vec4(mix(bot,top,h),1.0);}'
+    });
+    scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x88aa77, 0.55));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    var sun = new THREE.DirectionalLight(0xfff4e0, 0.95);
+    sun.position.set(12, 22, 10); sun.castShadow = true;
+    sun.shadow.mapSize.width = 1024; sun.shadow.mapSize.height = 1024;
+    sun.shadow.camera.left = -15; sun.shadow.camera.right = 15;
+    sun.shadow.camera.top = 15; sun.shadow.camera.bottom = -15;
+    sun.shadow.camera.near = 1; sun.shadow.camera.far = 60;
+    scene.add(sun);
+
+    var loader = new THREE.TextureLoader();
+    var matCache = {};
+    function mat(name) {
+      if (matCache[name]) return matCache[name];
+      var t = loader.load(A + 'build/' + BUILD3D_TEX[name]);
+      t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter;
+      if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding;
+      var glass = (name === 'glass');
+      var m = new THREE.MeshStandardMaterial({
+        map: t, roughness: 0.95, metalness: 0.0,
+        transparent: glass, opacity: glass ? 0.55 : 1.0,
+        emissive: (name === 'glow') ? new THREE.Color(0xffd27a) : new THREE.Color(0x000000),
+        emissiveIntensity: (name === 'glow') ? 0.8 : 0
+      });
+      matCache[name] = m; return m;
+    }
+
+    var group = new THREE.Group();
+    var geo = new THREE.BoxGeometry(1, 1, 1);
+    houseVoxels().forEach(function (bk) {
+      var cube = new THREE.Mesh(geo, mat(bk.t));
+      cube.position.set(bk.x, bk.y, bk.z);
+      cube.castShadow = (bk.y >= 0); cube.receiveShadow = true;
+      group.add(cube);
+    });
+    group.position.set(-3, -2.5, -3);
+    var pivot = new THREE.Group(); pivot.add(group); scene.add(pivot);
+
+    b3d = { THREE: THREE, renderer: renderer, scene: scene, camera: camera, pivot: pivot,
+      rotY: 0.7, rotX: 0.42, auto: true, camDist: 32, camTarget: 27, W: W, H: H };
+
+    setupBuild3dInput(canvas);
+    build3dLoop();
+  }
+
+  function setupBuild3dInput(canvas) {
+    var dragging = false, lx = 0, ly = 0;
+    function down(x, y) { dragging = true; b3d.auto = false; lx = x; ly = y; }
+    function move(x, y) {
+      if (!dragging || !b3d) return;
+      b3d.rotY += (x - lx) * 0.01; b3d.rotX += (y - ly) * 0.01;
+      b3d.rotX = Math.max(0.05, Math.min(1.1, b3d.rotX)); lx = x; ly = y;
+    }
+    function up() { dragging = false; }
+    canvas.addEventListener('mousedown', function (e) { down(e.clientX, e.clientY); });
+    window.addEventListener('mousemove', function (e) { move(e.clientX, e.clientY); });
+    window.addEventListener('mouseup', up);
+    canvas.addEventListener('touchstart', function (e) { var t = e.touches[0]; down(t.clientX, t.clientY); }, { passive: true });
+    canvas.addEventListener('touchmove', function (e) { var t = e.touches[0]; move(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+    canvas.addEventListener('touchend', up);
+  }
+
+  function build3dLoop() {
+    if (!b3d) return;
+    b3d.raf = requestAnimationFrame(build3dLoop);
+    if (b3d.auto) b3d.rotY += 0.0035;
+    b3d.camDist += (b3d.camTarget - b3d.camDist) * 0.04;
+    b3d.pivot.rotation.y = b3d.rotY;
+    b3d.pivot.rotation.x = b3d.rotX;
+    b3d.camera.position.set(0, 6.5, b3d.camDist);
+    b3d.camera.lookAt(0, 1.5, 0);
+    b3d.renderer.render(b3d.scene, b3d.camera);
+  }
+
+  // ---------- Bau-Modus: Bauplan wählen, dann geführt setzen ----------
+  // state.buildProject = { id, placed: { 'c,r': true } } oder null (= Auswahl zeigen)
+
+  function renderBuild() {
+    buildPanorama($('build-panorama'));
+    renderBuildCoins();
+    if (state.buildProject) renderBuildProject();
+    else renderBuildPicker();
+  }
+
+  function renderBuildCoins() {
+    var row = $('build-coins');
+    clear(row);
+    ['holz', 'stein', 'gold'].forEach(function (k) {
+      var chip = el('div', 'coin-chip');
+      chip.appendChild(img(RES[k].src));
+      chip.appendChild(el('span', null, String(state.res[k] || 0)));
+      row.appendChild(chip);
+    });
+  }
+
+  // --- Auswahl der Baupläne ---
+  function renderBuildPicker() {
+    $('build-mode-bar').style.display = 'none';
+    $('build-canvas').style.display = 'none';
+    var hint = $('build-shop-hint');
+    hint.textContent = 'Welches m\u00f6chtest du bauen?';
+    var picker = $('build-picker');
+    picker.style.display = 'flex';
+    clear(picker);
+    BLUEPRINTS.forEach(function (bp) {
+      var card = el('div', 'bp-card');
+      var done = state.builtProjects && state.builtProjects[bp.id];
+      // Mini-Vorschau
+      var prev = el('div', 'bp-preview');
+      var cols = bp.grid[0].length;
+      prev.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+      bp.grid.forEach(function (line) {
+        for (var c = 0; c < line.length; c++) {
+          var ch = line[c];
+          var pc = el('div', 'bp-px');
+          if (ch !== '.' && ch !== ' ' && BUILD_TEX[ch]) {
+            pc.style.backgroundImage = "url('" + A + 'build/' + BUILD_TEX[ch] + "')";
+          }
+          prev.appendChild(pc);
+        }
+      });
+      card.appendChild(prev);
+      var label = el('div', 'bp-name', bp.name + (done ? ' \u2713' : ''));
+      card.appendChild(label);
+      card.appendChild(buildCostRow(bp.cost));
+      card.addEventListener('click', function () {
+        startBuildProject(bp);
+      });
+      picker.appendChild(card);
+    });
+  }
+
+  function buildCostRow(cost) {
+    var row = el('div', 'bp-cost');
+    for (var k in cost) {
+      if (!cost[k]) continue;
+      var chip = el('div', 'bp-cost-chip');
+      chip.appendChild(img(RES[k].src));
+      chip.appendChild(el('span', null, String(cost[k])));
+      row.appendChild(chip);
+    }
+    return row;
+  }
+
+  function startBuildProject(bp) {
+    if (!canAfford(bp.cost)) {
+      Sound.deny();
+      var k = Object.keys(bp.cost).filter(function (x) { return bp.cost[x]; })[0];
+      say('fehlt_rohstoffe', 'Daf\u00fcr brauchst du noch ' + RES[k].name + '. Sammle beim Rechnen!');
+      flashMissing(bp.cost);
+      return;
+    }
+    payCost(bp.cost);
+    state.buildProject = { id: bp.id, placed: {} };
+    Sound.mine();
+    say('bauplan', 'Los geht\u2019s! Tippe die Bl\u00f6cke, einer nach dem anderen.');
+    renderBuildCoins();
+    renderBuild();
+  }
+
+  // --- Geführtes Setzen ---
+  function buildCellSize() {
+    var bp = blueprintById(state.buildProject.id);
+    var maxW = Math.min(520, window.innerWidth * 0.92);
+    return Math.floor(maxW / bp.grid[0].length);
+  }
+
+  function renderBuildProject() {
+    $('build-picker').style.display = 'none';
+    $('build-mode-bar').style.display = 'flex';
+    var bp = blueprintById(state.buildProject.id);
+    var cells = buildableCells(bp);
+    var placedCount = cells.filter(function (cell) {
+      return state.buildProject.placed[cell.c + ',' + cell.r];
+    }).length;
+    var total = cells.length;
+    // nächste zu setzende Zelle (erste unplatzierte in Reihenfolge unten->oben)
+    var next = null;
+    for (var i = 0; i < cells.length; i++) {
+      if (!state.buildProject.placed[cells[i].c + ',' + cells[i].r]) { next = cells[i]; break; }
+    }
+    var hint = $('build-shop-hint');
+    if (next) hint.textContent = 'Tippe das ' + (BUILD_NAMES[next.ch] || 'Feld') + '-Feld! (' + placedCount + ' / ' + total + ')';
+    else hint.textContent = 'Fertig! ' + bp.name + ' gebaut!';
+
+    var cv = $('build-canvas');
+    cv.style.display = 'grid';
+    clear(cv);
+    var cs = buildCellSize();
+    var cols = bp.grid[0].length;
+    cv.style.width = (cs * cols) + 'px';
+    cv.style.gridTemplateColumns = 'repeat(' + cols + ', ' + cs + 'px)';
+    for (var r = 0; r < bp.grid.length; r++) {
+      for (var c = 0; c < cols; c++) {
+        var ch = bp.grid[r][c];
+        var cell = el('div', 'build-cell');
+        cell.style.width = cs + 'px';
+        cell.style.height = cs + 'px';
+        if (ch === '.' || ch === ' ') {
+          cv.appendChild(cell); continue;
+        }
+        var tex = "url('" + A + 'build/' + BUILD_TEX[ch] + "')";
+        if (isGroundChar(ch)) {
+          // Untergrund: immer sichtbar, nicht baubar
+          cell.style.backgroundImage = tex;
+        } else {
+          var key = c + ',' + r;
+          var isPlaced = state.buildProject.placed[key];
+          if (isPlaced) {
+            cell.style.backgroundImage = tex;
+          } else {
+            // Geisterzelle: blass zeigen, was hierhin gehört
+            var ghost = img(A + 'build/' + BUILD_TEX[ch], 'bp-ghost');
+            cell.appendChild(ghost);
+            if (next && next.c === c && next.r === r) cell.classList.add('bp-next');
+          }
+          (function (cc, rr) {
+            cell.addEventListener('click', function () { onBuildPlace(cc, rr); });
+          })(c, r);
+        }
+        cv.appendChild(cell);
+      }
+    }
+  }
+
+  function onBuildPlace(c, r) {
+    var bp = blueprintById(state.buildProject.id);
+    var cells = buildableCells(bp);
+    var next = null;
+    for (var i = 0; i < cells.length; i++) {
+      if (!state.buildProject.placed[cells[i].c + ',' + cells[i].r]) { next = cells[i]; break; }
+    }
+    if (!next) return;
+    // Muss in Reihenfolge gesetzt werden (von unten nach oben) -> nur die nächste Zelle zählt
+    if (next.c !== c || next.r !== r) {
+      Sound.deny();
+      flashHint('Tippe das blinkende Feld!');
+      return;
+    }
+    state.buildProject.placed[c + ',' + r] = true;
+    Sound.mine();
+    saveState();
+    // fertig?
+    var remaining = cells.some(function (cell) {
+      return !state.buildProject.placed[cell.c + ',' + cell.r];
+    });
+    if (!remaining) {
+      state.builtProjects = state.builtProjects || {};
+      state.builtProjects[bp.id] = true;
+      Sound.levelup();
+      say('haus_2', 'Super! Du hast das ' + bp.name + ' gebaut!');
+      saveState();
+      setTimeout(function () {
+        renderBuildProject();
+      }, 400);
+    } else {
+      renderBuildProject();
+    }
+  }
+
+  function flashHint(msg) {
+    var hint = $('build-shop-hint');
+    hint.textContent = msg;
+    hint.classList.remove('hint-flash'); void hint.offsetWidth; hint.classList.add('hint-flash');
+  }
+
+  function flashMissing(cost) {
+    var chips = $('build-coins').querySelectorAll('.coin-chip');
+    chips.forEach(function (chip) { chip.classList.remove('wiggle'); void chip.offsetWidth; chip.classList.add('wiggle'); });
+  }
+
   function renderHome(animate) {
+
     buildPanorama($('panorama-home'));
     renderResBar('res-home');
     var pet = (state.activePet && state.pets[state.activePet]) ? petById(state.activePet) : null;
@@ -2744,6 +3209,27 @@
 
   $('btn-start-game').addEventListener('click', startSession);
   $('btn-start-home').addEventListener('click', function () { renderHome(); show('screen-home'); });
+  $('btn-start-build').addEventListener('click', function () { renderBuild(); show('screen-build'); });
+  $('btn-build-back').addEventListener('click', function () { build3dStop(); setBtnLabel('btn-build-3d', '3D ansehen'); renderStart(); show('screen-start'); });
+  $('btn-build-3d').addEventListener('click', function () {
+    var on = $('build3d-wrap').style.display !== 'block';
+    if (on) {
+      $('build-picker').style.display = 'none';
+      $('build-canvas').style.display = 'none';
+      build3dStart();
+      setBtnLabel('btn-build-3d', '2D zur\u00fcck');
+    } else {
+      build3dStop();
+      setBtnLabel('btn-build-3d', '3D ansehen');
+      renderBuild();
+    }
+  });
+
+  $('btn-build-choose').addEventListener('click', function () {
+    state.buildProject = null;
+    saveState();
+    renderBuild();
+  });
   $('btn-start-forge').addEventListener('click', function () { renderForge(); show('screen-forge'); });
   $('btn-start-pets').addEventListener('click', function () { Object.keys(state.pets).forEach(function (id) { state.seen.pets[id] = true; }); saveState(); renderPets(); show('screen-pets'); });
   $('btn-start-trophies').addEventListener('click', function () { Object.keys(state.trophies).forEach(function (id) { state.seen.trophies[id] = true; }); saveState(); renderTrophies(); show('screen-trophies'); });

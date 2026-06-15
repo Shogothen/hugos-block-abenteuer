@@ -9,7 +9,7 @@
 <title>Hugos Block-Abenteuer</title>
 <link rel="icon" type="image/png" href="icon-180.png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=30">
+<link rel="stylesheet" href="style.css?v=36">
 </head>
 <body>
 
@@ -41,6 +41,10 @@
       <button id="btn-start-home" class="mc-btn menu-btn">
         <img class="btn-ico" src="assets/minecraft/blocks/planks_oak.png" alt="">
         <span>Mein Zuhause</span>
+      </button>
+      <button id="btn-start-build" class="mc-btn menu-btn">
+        <img class="btn-ico" src="assets/minecraft/deco/wool_colored_lime.png" alt="">
+        <span>Bauen</span>
       </button>
       <button id="btn-start-forge" class="mc-btn menu-btn">
         <img class="btn-ico" src="assets/minecraft/items/iron_sword.png" alt="">
@@ -200,6 +204,25 @@
 </section>
 
 <!-- ============ ELTERN ============ -->
+<section id="screen-build" class="screen">
+  <div id="build-panorama" class="panorama pan-small"></div>
+  <div class="build-bar">
+    <button id="btn-build-back" class="mc-btn small"><img class="btn-ico" src="assets/minecraft/mobs/steve_face.png" alt=""><span>Zurück</span></button>
+    <div id="build-coins" class="build-coins"></div>
+    <button id="btn-build-3d" class="mc-btn small"><span>3D ansehen</span></button>
+  </div>
+  <div id="build-shop-hint" class="build-shop-hint"></div>
+  <div id="build-picker" class="build-picker"></div>
+  <div id="build-mode-bar" class="build-mode-bar" style="display:none">
+    <button id="btn-build-choose" class="mc-btn small"><span>← Anderer Bauplan</span></button>
+  </div>
+  <div id="build-canvas" class="build-canvas" style="display:none"></div>
+  <div id="build3d-wrap" class="build3d-wrap" style="display:none">
+    <canvas id="build3d-canvas"></canvas>
+    <div id="build3d-hint" class="build3d-hint">Mit dem Finger drehen</div>
+  </div>
+</section>
+
 <section id="screen-parent" class="screen">
   <div class="mc-panel">
     <h2 class="subtitle">Elternbereich</h2>
@@ -373,6 +396,6 @@
   </div>
 </div>
 
-<script src="app.js?v=30"></script>
+<script src="app.js?v=36"></script>
 </body>
 </html>

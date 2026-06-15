@@ -982,3 +982,109 @@ body.shake { animation: screen-shake 0.35s ease; }
 .diag-line { font-size: 13px; padding: 4px 8px; margin: 3px 0; background: #222; border-left: 4px solid #888; }
 .diag-line.ok { border-left-color: #5dbb46; color: #b9e8ae; }
 .diag-line.bad { border-left-color: #d4453c; color: #f3b3ae; }
+
+/* ---------- v8.0: Bau-Modus ---------- */
+#screen-build { display: none; }
+#screen-build.active { display: flex; flex-direction: column; align-items: center; }
+.build-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  justify-content: center; margin: 8px 0; width: 100%; max-width: 560px;
+}
+.build-coins { display: flex; gap: 8px; }
+.coin-chip {
+  display: flex; align-items: center; gap: 3px;
+  background: rgba(20,20,24,0.7); border: 2px solid #000; padding: 3px 7px;
+}
+.coin-chip img { width: 18px; height: 18px; }
+.coin-chip span { font-size: 14px; color: #ffd83d; }
+.coin-chip.wiggle { animation: wiggle 0.4s ease; }
+.build-canvas {
+  display: grid; gap: 0; margin: 4px auto;
+  border: 4px solid #000; box-shadow: 0 4px 0 rgba(0,0,0,0.4);
+  background: linear-gradient(#8ec8f2, #b8e0fa);
+}
+.build-cell {
+  background-size: cover; image-rendering: pixelated;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  cursor: pointer;
+}
+.build-cell:active { box-shadow: inset 0 0 0 2px rgba(255,216,61,0.6); }
+.build-placed { width: 100%; height: 100%; animation: placed-pop 0.25s ease; }
+.build-shop-hint {
+  font-size: 14px; color: #cfe8ff; text-shadow: 1px 1px 0 #000;
+  min-height: 18px; margin: 4px 0; text-align: center; padding: 0 12px;
+}
+.build-palette {
+  display: flex; gap: 6px; overflow-x: auto; padding: 8px;
+  max-width: 100%; background: rgba(15,15,18,0.6); border-top: 3px solid #000;
+  scrollbar-width: thin;
+}
+.palette-cell {
+  position: relative; flex: 0 0 auto;
+  width: 48px; height: 48px; padding: 4px;
+  background: rgba(40,40,46,0.9); border: 2px solid #000; cursor: pointer;
+}
+.palette-cell img { width: 100%; height: 100%; }
+.palette-cell.selected { border-color: #ffd83d; box-shadow: 0 0 0 2px rgba(255,216,61,0.5); }
+.palette-cell.locked img { opacity: 0.45; filter: grayscale(0.5); }
+.palette-cost {
+  position: absolute; bottom: -2px; right: -2px;
+  display: flex; align-items: center; gap: 1px;
+  background: rgba(0,0,0,0.82); padding: 1px 3px; border: 1px solid #000;
+}
+.palette-cost img { width: 11px; height: 11px; }
+.palette-cost span { font-size: 10px; color: #ffd83d; }
+
+/* Bodendeko sitzt auf der Oberfläche, füllt nicht die Zelle */
+.build-cell { position: relative; }
+.deco-ground {
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 82%; height: 82%; object-fit: contain;
+}
+.deco-furniture {
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 94%; height: 94%; object-fit: contain;
+}
+.hint-flash { animation: hint-flash 0.6s ease; }
+@keyframes hint-flash {
+  0%, 100% { color: #cfe8ff; }
+  30% { color: #ff8c6b; }
+}
+
+/* ---------- v8.1: Bauplan-System ---------- */
+.build-picker { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 10px; max-width: 600px; }
+.bp-card {
+  width: 130px; background: rgba(25,27,34,0.92); border: 3px solid #000;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07), 0 4px 0 rgba(0,0,0,0.4);
+  padding: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.bp-card:active { transform: translateY(2px); }
+.bp-preview {
+  display: grid; width: 112px; aspect-ratio: 1; gap: 0;
+  background: linear-gradient(#8ec8f2,#b8e0fa); border: 2px solid #000;
+}
+.bp-px { background-size: cover; image-rendering: pixelated; }
+.bp-name { font-size: 13px; color: #ffd83d; text-shadow: 1px 1px 0 #000; text-align: center; }
+.bp-cost { display: flex; gap: 6px; }
+.bp-cost-chip { display: flex; align-items: center; gap: 2px; }
+.bp-cost-chip img { width: 16px; height: 16px; }
+.bp-cost-chip span { font-size: 12px; color: #cfe8ff; }
+.build-mode-bar { display: flex; justify-content: center; margin: 6px 0; }
+.bp-ghost { width: 100%; height: 100%; opacity: 0.28; filter: grayscale(0.4); }
+.bp-next { box-shadow: inset 0 0 0 3px #ffd83d; animation: bp-pulse 1s ease-in-out infinite; }
+@keyframes bp-pulse {
+  0%, 100% { box-shadow: inset 0 0 0 3px rgba(255,216,61,0.5); }
+  50% { box-shadow: inset 0 0 0 3px rgba(255,216,61,1); }
+}
+
+/* ---------- v8.2: 3D-Bau-Ansicht ---------- */
+.build3d-wrap {
+  position: relative; width: 100%; max-width: 760px; margin: 0 auto;
+  border: 4px solid #000; box-shadow: 0 4px 0 rgba(0,0,0,0.4);
+  background: linear-gradient(#bfe3ff, #e9f6ff); overflow: hidden;
+}
+#build3d-canvas { display: block; width: 100%; touch-action: none; }
+.build3d-hint {
+  position: absolute; top: 10px; left: 0; right: 0; text-align: center;
+  color: #3a5a78; font-size: 14px; font-weight: bold; pointer-events: none; opacity: 0.85;
+}
