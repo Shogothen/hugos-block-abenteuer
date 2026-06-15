@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 41;
-  var AUDIO_VER = '?v=41';
+  var APP_V = 42;
+  var AUDIO_VER = '?v=42';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2137,7 +2137,7 @@
       threeLoading = false;
       $('build3d-hint').textContent = '3D konnte nicht geladen werden (Internet?)';
     };
-    document.head.appendChild(s);
+    (document.head || document.body || document.documentElement).appendChild(s);
   }
 
   var BUILD3D_DATA = {
@@ -2162,25 +2162,12 @@
   };
 
   // Voxel-Haus (gleiches Modell wie der abgenommene Prototyp v4)
+  var HOUSE_MODELS = {"starter":[[-1,0,-1,"grass_top"],[-1,-1,-1,"dirt"],[-1,0,0,"grass_top"],[-1,-1,0,"dirt"],[-1,0,1,"grass_top"],[-1,-1,1,"dirt"],[-1,0,2,"grass_top"],[-1,-1,2,"dirt"],[-1,0,3,"grass_top"],[-1,-1,3,"dirt"],[-1,0,4,"grass_top"],[-1,-1,4,"dirt"],[-1,0,5,"grass_top"],[-1,-1,5,"dirt"],[-1,0,6,"grass_top"],[-1,-1,6,"dirt"],[-1,0,7,"grass_top"],[-1,-1,7,"dirt"],[0,0,-1,"grass_top"],[0,-1,-1,"dirt"],[0,0,0,"grass_top"],[0,-1,0,"dirt"],[0,0,1,"grass_top"],[0,-1,1,"dirt"],[0,0,2,"grass_top"],[0,-1,2,"dirt"],[0,0,3,"grass_top"],[0,-1,3,"dirt"],[0,0,4,"grass_top"],[0,-1,4,"dirt"],[0,0,5,"grass_top"],[0,-1,5,"dirt"],[0,0,6,"grass_top"],[0,-1,6,"dirt"],[0,0,7,"grass_top"],[0,-1,7,"dirt"],[1,0,-1,"grass_top"],[1,-1,-1,"dirt"],[1,0,0,"grass_top"],[1,-1,0,"dirt"],[1,0,1,"grass_top"],[1,-1,1,"dirt"],[1,0,2,"grass_top"],[1,-1,2,"dirt"],[1,0,3,"grass_top"],[1,-1,3,"dirt"],[1,0,4,"grass_top"],[1,-1,4,"dirt"],[1,0,5,"grass_top"],[1,-1,5,"dirt"],[1,0,6,"grass_top"],[1,-1,6,"dirt"],[1,0,7,"grass_top"],[1,-1,7,"dirt"],[2,0,-1,"grass_top"],[2,-1,-1,"dirt"],[2,0,0,"grass_top"],[2,-1,0,"dirt"],[2,0,1,"grass_top"],[2,-1,1,"dirt"],[2,0,2,"grass_top"],[2,-1,2,"dirt"],[2,0,3,"grass_top"],[2,-1,3,"dirt"],[2,0,4,"grass_top"],[2,-1,4,"dirt"],[2,0,5,"grass_top"],[2,-1,5,"dirt"],[2,0,6,"grass_top"],[2,-1,6,"dirt"],[2,0,7,"grass_top"],[2,-1,7,"dirt"],[3,0,-1,"grass_top"],[3,-1,-1,"dirt"],[3,0,0,"grass_top"],[3,-1,0,"dirt"],[3,0,1,"grass_top"],[3,-1,1,"dirt"],[3,0,2,"grass_top"],[3,-1,2,"dirt"],[3,0,3,"grass_top"],[3,-1,3,"dirt"],[3,0,4,"grass_top"],[3,-1,4,"dirt"],[3,0,5,"grass_top"],[3,-1,5,"dirt"],[3,0,6,"grass_top"],[3,-1,6,"dirt"],[3,0,7,"grass_top"],[3,-1,7,"dirt"],[4,0,-1,"grass_top"],[4,-1,-1,"dirt"],[4,0,0,"grass_top"],[4,-1,0,"dirt"],[4,0,1,"grass_top"],[4,-1,1,"dirt"],[4,0,2,"grass_top"],[4,-1,2,"dirt"],[4,0,3,"grass_top"],[4,-1,3,"dirt"],[4,0,4,"grass_top"],[4,-1,4,"dirt"],[4,0,5,"grass_top"],[4,-1,5,"dirt"],[4,0,6,"grass_top"],[4,-1,6,"dirt"],[4,0,7,"grass_top"],[4,-1,7,"dirt"],[5,0,-1,"grass_top"],[5,-1,-1,"dirt"],[5,0,0,"grass_top"],[5,-1,0,"dirt"],[5,0,1,"grass_top"],[5,-1,1,"dirt"],[5,0,2,"grass_top"],[5,-1,2,"dirt"],[5,0,3,"grass_top"],[5,-1,3,"dirt"],[5,0,4,"grass_top"],[5,-1,4,"dirt"],[5,0,5,"grass_top"],[5,-1,5,"dirt"],[5,0,6,"grass_top"],[5,-1,6,"dirt"],[5,0,7,"grass_top"],[5,-1,7,"dirt"],[6,0,-1,"grass_top"],[6,-1,-1,"dirt"],[6,0,0,"grass_top"],[6,-1,0,"dirt"],[6,0,1,"grass_top"],[6,-1,1,"dirt"],[6,0,2,"grass_top"],[6,-1,2,"dirt"],[6,0,3,"grass_top"],[6,-1,3,"dirt"],[6,0,4,"grass_top"],[6,-1,4,"dirt"],[6,0,5,"grass_top"],[6,-1,5,"dirt"],[6,0,6,"grass_top"],[6,-1,6,"dirt"],[6,0,7,"grass_top"],[6,-1,7,"dirt"],[7,0,-1,"grass_top"],[7,-1,-1,"dirt"],[7,0,0,"grass_top"],[7,-1,0,"dirt"],[7,0,1,"grass_top"],[7,-1,1,"dirt"],[7,0,2,"grass_top"],[7,-1,2,"dirt"],[7,0,3,"grass_top"],[7,-1,3,"dirt"],[7,0,4,"grass_top"],[7,-1,4,"dirt"],[7,0,5,"grass_top"],[7,-1,5,"dirt"],[7,0,6,"grass_top"],[7,-1,6,"dirt"],[7,0,7,"grass_top"],[7,-1,7,"dirt"],[0,1,0,"log"],[0,1,1,"planks"],[0,1,2,"planks"],[0,1,3,"planks"],[0,1,4,"planks"],[0,1,5,"planks"],[0,1,6,"log"],[1,1,0,"planks"],[1,1,6,"planks"],[2,1,0,"planks"],[2,1,6,"planks"],[3,1,6,"planks"],[4,1,0,"planks"],[4,1,6,"planks"],[5,1,0,"planks"],[5,1,6,"planks"],[6,1,0,"log"],[6,1,1,"planks"],[6,1,2,"planks"],[6,1,3,"planks"],[6,1,4,"planks"],[6,1,5,"planks"],[6,1,6,"log"],[0,2,0,"log"],[0,2,1,"stripped"],[0,2,2,"glass"],[0,2,3,"stripped"],[0,2,4,"glass"],[0,2,5,"stripped"],[0,2,6,"log"],[1,2,0,"stripped"],[1,2,6,"stripped"],[2,2,0,"glass"],[2,2,6,"glass"],[3,2,6,"stripped"],[4,2,0,"glass"],[4,2,6,"glass"],[5,2,0,"stripped"],[5,2,6,"stripped"],[6,2,0,"log"],[6,2,1,"stripped"],[6,2,2,"glass"],[6,2,3,"stripped"],[6,2,4,"glass"],[6,2,5,"stripped"],[6,2,6,"log"],[0,3,0,"log"],[0,3,1,"planks"],[0,3,2,"planks"],[0,3,3,"planks"],[0,3,4,"planks"],[0,3,5,"planks"],[0,3,6,"log"],[1,3,0,"planks"],[1,3,6,"planks"],[2,3,0,"planks"],[2,3,6,"planks"],[3,3,0,"planks"],[3,3,6,"planks"],[4,3,0,"planks"],[4,3,6,"planks"],[5,3,0,"planks"],[5,3,6,"planks"],[6,3,0,"log"],[6,3,1,"planks"],[6,3,2,"planks"],[6,3,3,"planks"],[6,3,4,"planks"],[6,3,5,"planks"],[6,3,6,"log"],[3,1,0,"door_low"],[3,2,0,"door_up"],[0,4,0,"slab"],[0,4,1,"slab"],[0,4,2,"slab"],[0,4,3,"slab"],[0,4,4,"slab"],[0,4,5,"slab"],[0,4,6,"slab"],[1,4,0,"slab"],[1,4,6,"slab"],[2,4,0,"slab"],[2,4,6,"slab"],[3,4,0,"slab"],[3,4,6,"slab"],[4,4,0,"slab"],[4,4,6,"slab"],[5,4,0,"slab"],[5,4,6,"slab"],[6,4,0,"slab"],[6,4,1,"slab"],[6,4,2,"slab"],[6,4,3,"slab"],[6,4,4,"slab"],[6,4,5,"slab"],[6,4,6,"slab"],[3,5,3,"slab"],[0,4,0,"slab"],[0,4,1,"slab"],[0,4,2,"slab"],[0,4,3,"slab"],[0,4,4,"slab"],[0,4,5,"slab"],[0,4,6,"slab"],[1,4,0,"slab"],[1,4,6,"slab"],[2,4,0,"slab"],[2,4,6,"slab"],[3,4,0,"slab"],[3,4,6,"slab"],[4,4,0,"slab"],[4,4,6,"slab"],[5,4,0,"slab"],[5,4,6,"slab"],[6,4,0,"slab"],[6,4,1,"slab"],[6,4,2,"slab"],[6,4,3,"slab"],[6,4,4,"slab"],[6,4,5,"slab"],[6,4,6,"slab"],[1,5,1,"stone"],[1,5,2,"stone"],[1,5,3,"stone"],[1,5,4,"stone"],[1,5,5,"stone"],[2,5,1,"stone"],[2,5,5,"stone"],[3,5,1,"stone"],[3,5,5,"stone"],[4,5,1,"stone"],[4,5,5,"stone"],[5,5,1,"stone"],[5,5,2,"stone"],[5,5,3,"stone"],[5,5,4,"stone"],[5,5,5,"stone"],[2,6,2,"stone"],[2,6,3,"stone"],[2,6,4,"stone"],[3,6,2,"stone"],[3,6,4,"stone"],[4,6,2,"stone"],[4,6,3,"stone"],[4,6,4,"stone"],[3,7,3,"stone"],[1,5,1,"cobble"],[1,6,1,"cobble"],[5,1,-1,"glow"]],"stone":[[-1,0,-1,"grass_top"],[-1,-1,-1,"dirt"],[-1,0,0,"grass_top"],[-1,-1,0,"dirt"],[-1,0,1,"grass_top"],[-1,-1,1,"dirt"],[-1,0,2,"grass_top"],[-1,-1,2,"dirt"],[-1,0,3,"grass_top"],[-1,-1,3,"dirt"],[-1,0,4,"grass_top"],[-1,-1,4,"dirt"],[-1,0,5,"grass_top"],[-1,-1,5,"dirt"],[-1,0,6,"grass_top"],[-1,-1,6,"dirt"],[-1,0,7,"grass_top"],[-1,-1,7,"dirt"],[0,0,-1,"grass_top"],[0,-1,-1,"dirt"],[0,0,0,"grass_top"],[0,-1,0,"dirt"],[0,0,1,"grass_top"],[0,-1,1,"dirt"],[0,0,2,"grass_top"],[0,-1,2,"dirt"],[0,0,3,"grass_top"],[0,-1,3,"dirt"],[0,0,4,"grass_top"],[0,-1,4,"dirt"],[0,0,5,"grass_top"],[0,-1,5,"dirt"],[0,0,6,"grass_top"],[0,-1,6,"dirt"],[0,0,7,"grass_top"],[0,-1,7,"dirt"],[1,0,-1,"grass_top"],[1,-1,-1,"dirt"],[1,0,0,"grass_top"],[1,-1,0,"dirt"],[1,0,1,"grass_top"],[1,-1,1,"dirt"],[1,0,2,"grass_top"],[1,-1,2,"dirt"],[1,0,3,"grass_top"],[1,-1,3,"dirt"],[1,0,4,"grass_top"],[1,-1,4,"dirt"],[1,0,5,"grass_top"],[1,-1,5,"dirt"],[1,0,6,"grass_top"],[1,-1,6,"dirt"],[1,0,7,"grass_top"],[1,-1,7,"dirt"],[2,0,-1,"grass_top"],[2,-1,-1,"dirt"],[2,0,0,"grass_top"],[2,-1,0,"dirt"],[2,0,1,"grass_top"],[2,-1,1,"dirt"],[2,0,2,"grass_top"],[2,-1,2,"dirt"],[2,0,3,"grass_top"],[2,-1,3,"dirt"],[2,0,4,"grass_top"],[2,-1,4,"dirt"],[2,0,5,"grass_top"],[2,-1,5,"dirt"],[2,0,6,"grass_top"],[2,-1,6,"dirt"],[2,0,7,"grass_top"],[2,-1,7,"dirt"],[3,0,-1,"grass_top"],[3,-1,-1,"dirt"],[3,0,0,"grass_top"],[3,-1,0,"dirt"],[3,0,1,"grass_top"],[3,-1,1,"dirt"],[3,0,2,"grass_top"],[3,-1,2,"dirt"],[3,0,3,"grass_top"],[3,-1,3,"dirt"],[3,0,4,"grass_top"],[3,-1,4,"dirt"],[3,0,5,"grass_top"],[3,-1,5,"dirt"],[3,0,6,"grass_top"],[3,-1,6,"dirt"],[3,0,7,"grass_top"],[3,-1,7,"dirt"],[4,0,-1,"grass_top"],[4,-1,-1,"dirt"],[4,0,0,"grass_top"],[4,-1,0,"dirt"],[4,0,1,"grass_top"],[4,-1,1,"dirt"],[4,0,2,"grass_top"],[4,-1,2,"dirt"],[4,0,3,"grass_top"],[4,-1,3,"dirt"],[4,0,4,"grass_top"],[4,-1,4,"dirt"],[4,0,5,"grass_top"],[4,-1,5,"dirt"],[4,0,6,"grass_top"],[4,-1,6,"dirt"],[4,0,7,"grass_top"],[4,-1,7,"dirt"],[5,0,-1,"grass_top"],[5,-1,-1,"dirt"],[5,0,0,"grass_top"],[5,-1,0,"dirt"],[5,0,1,"grass_top"],[5,-1,1,"dirt"],[5,0,2,"grass_top"],[5,-1,2,"dirt"],[5,0,3,"grass_top"],[5,-1,3,"dirt"],[5,0,4,"grass_top"],[5,-1,4,"dirt"],[5,0,5,"grass_top"],[5,-1,5,"dirt"],[5,0,6,"grass_top"],[5,-1,6,"dirt"],[5,0,7,"grass_top"],[5,-1,7,"dirt"],[6,0,-1,"grass_top"],[6,-1,-1,"dirt"],[6,0,0,"grass_top"],[6,-1,0,"dirt"],[6,0,1,"grass_top"],[6,-1,1,"dirt"],[6,0,2,"grass_top"],[6,-1,2,"dirt"],[6,0,3,"grass_top"],[6,-1,3,"dirt"],[6,0,4,"grass_top"],[6,-1,4,"dirt"],[6,0,5,"grass_top"],[6,-1,5,"dirt"],[6,0,6,"grass_top"],[6,-1,6,"dirt"],[6,0,7,"grass_top"],[6,-1,7,"dirt"],[7,0,-1,"grass_top"],[7,-1,-1,"dirt"],[7,0,0,"grass_top"],[7,-1,0,"dirt"],[7,0,1,"grass_top"],[7,-1,1,"dirt"],[7,0,2,"grass_top"],[7,-1,2,"dirt"],[7,0,3,"grass_top"],[7,-1,3,"dirt"],[7,0,4,"grass_top"],[7,-1,4,"dirt"],[7,0,5,"grass_top"],[7,-1,5,"dirt"],[7,0,6,"grass_top"],[7,-1,6,"dirt"],[7,0,7,"grass_top"],[7,-1,7,"dirt"],[0,1,0,"log"],[0,1,1,"stone"],[0,1,2,"stone"],[0,1,3,"stone"],[0,1,4,"stone"],[0,1,5,"stone"],[0,1,6,"log"],[1,1,0,"stone"],[1,1,6,"stone"],[2,1,0,"stone"],[2,1,6,"stone"],[3,1,6,"stone"],[4,1,0,"stone"],[4,1,6,"stone"],[5,1,0,"stone"],[5,1,6,"stone"],[6,1,0,"log"],[6,1,1,"stone"],[6,1,2,"stone"],[6,1,3,"stone"],[6,1,4,"stone"],[6,1,5,"stone"],[6,1,6,"log"],[0,2,0,"log"],[0,2,1,"stone"],[0,2,2,"glass"],[0,2,3,"stone"],[0,2,4,"glass"],[0,2,5,"stone"],[0,2,6,"log"],[1,2,0,"stone"],[1,2,6,"stone"],[2,2,0,"glass"],[2,2,6,"glass"],[3,2,6,"stone"],[4,2,0,"glass"],[4,2,6,"glass"],[5,2,0,"stone"],[5,2,6,"stone"],[6,2,0,"log"],[6,2,1,"stone"],[6,2,2,"glass"],[6,2,3,"stone"],[6,2,4,"glass"],[6,2,5,"stone"],[6,2,6,"log"],[0,3,0,"log"],[0,3,1,"stone"],[0,3,2,"stone"],[0,3,3,"stone"],[0,3,4,"stone"],[0,3,5,"stone"],[0,3,6,"log"],[1,3,0,"stone"],[1,3,6,"stone"],[2,3,0,"stone"],[2,3,6,"stone"],[3,3,0,"stone"],[3,3,6,"stone"],[4,3,0,"stone"],[4,3,6,"stone"],[5,3,0,"stone"],[5,3,6,"stone"],[6,3,0,"log"],[6,3,1,"stone"],[6,3,2,"stone"],[6,3,3,"stone"],[6,3,4,"stone"],[6,3,5,"stone"],[6,3,6,"log"],[3,1,0,"door_low"],[3,2,0,"door_up"],[0,4,0,"slab"],[0,4,1,"slab"],[0,4,2,"slab"],[0,4,3,"slab"],[0,4,4,"slab"],[0,4,5,"slab"],[0,4,6,"slab"],[1,4,0,"slab"],[1,4,6,"slab"],[2,4,0,"slab"],[2,4,6,"slab"],[3,4,0,"slab"],[3,4,6,"slab"],[4,4,0,"slab"],[4,4,6,"slab"],[5,4,0,"slab"],[5,4,6,"slab"],[6,4,0,"slab"],[6,4,1,"slab"],[6,4,2,"slab"],[6,4,3,"slab"],[6,4,4,"slab"],[6,4,5,"slab"],[6,4,6,"slab"],[1,5,1,"cobble"],[1,5,2,"cobble"],[1,5,3,"cobble"],[1,5,4,"cobble"],[1,5,5,"cobble"],[2,5,1,"cobble"],[2,5,5,"cobble"],[3,5,1,"cobble"],[3,5,5,"cobble"],[4,5,1,"cobble"],[4,5,5,"cobble"],[5,5,1,"cobble"],[5,5,2,"cobble"],[5,5,3,"cobble"],[5,5,4,"cobble"],[5,5,5,"cobble"],[2,6,2,"cobble"],[2,6,3,"cobble"],[2,6,4,"cobble"],[3,6,2,"cobble"],[3,6,4,"cobble"],[4,6,2,"cobble"],[4,6,3,"cobble"],[4,6,4,"cobble"],[3,7,3,"cobble"],[5,1,-1,"glow"]],"tower":[[-1,0,-1,"grass_top"],[-1,-1,-1,"dirt"],[-1,0,0,"grass_top"],[-1,-1,0,"dirt"],[-1,0,1,"grass_top"],[-1,-1,1,"dirt"],[-1,0,2,"grass_top"],[-1,-1,2,"dirt"],[-1,0,3,"grass_top"],[-1,-1,3,"dirt"],[-1,0,4,"grass_top"],[-1,-1,4,"dirt"],[-1,0,5,"grass_top"],[-1,-1,5,"dirt"],[0,0,-1,"grass_top"],[0,-1,-1,"dirt"],[0,0,0,"grass_top"],[0,-1,0,"dirt"],[0,0,1,"grass_top"],[0,-1,1,"dirt"],[0,0,2,"grass_top"],[0,-1,2,"dirt"],[0,0,3,"grass_top"],[0,-1,3,"dirt"],[0,0,4,"grass_top"],[0,-1,4,"dirt"],[0,0,5,"grass_top"],[0,-1,5,"dirt"],[1,0,-1,"grass_top"],[1,-1,-1,"dirt"],[1,0,0,"grass_top"],[1,-1,0,"dirt"],[1,0,1,"grass_top"],[1,-1,1,"dirt"],[1,0,2,"grass_top"],[1,-1,2,"dirt"],[1,0,3,"grass_top"],[1,-1,3,"dirt"],[1,0,4,"grass_top"],[1,-1,4,"dirt"],[1,0,5,"grass_top"],[1,-1,5,"dirt"],[2,0,-1,"grass_top"],[2,-1,-1,"dirt"],[2,0,0,"grass_top"],[2,-1,0,"dirt"],[2,0,1,"grass_top"],[2,-1,1,"dirt"],[2,0,2,"grass_top"],[2,-1,2,"dirt"],[2,0,3,"grass_top"],[2,-1,3,"dirt"],[2,0,4,"grass_top"],[2,-1,4,"dirt"],[2,0,5,"grass_top"],[2,-1,5,"dirt"],[3,0,-1,"grass_top"],[3,-1,-1,"dirt"],[3,0,0,"grass_top"],[3,-1,0,"dirt"],[3,0,1,"grass_top"],[3,-1,1,"dirt"],[3,0,2,"grass_top"],[3,-1,2,"dirt"],[3,0,3,"grass_top"],[3,-1,3,"dirt"],[3,0,4,"grass_top"],[3,-1,4,"dirt"],[3,0,5,"grass_top"],[3,-1,5,"dirt"],[4,0,-1,"grass_top"],[4,-1,-1,"dirt"],[4,0,0,"grass_top"],[4,-1,0,"dirt"],[4,0,1,"grass_top"],[4,-1,1,"dirt"],[4,0,2,"grass_top"],[4,-1,2,"dirt"],[4,0,3,"grass_top"],[4,-1,3,"dirt"],[4,0,4,"grass_top"],[4,-1,4,"dirt"],[4,0,5,"grass_top"],[4,-1,5,"dirt"],[5,0,-1,"grass_top"],[5,-1,-1,"dirt"],[5,0,0,"grass_top"],[5,-1,0,"dirt"],[5,0,1,"grass_top"],[5,-1,1,"dirt"],[5,0,2,"grass_top"],[5,-1,2,"dirt"],[5,0,3,"grass_top"],[5,-1,3,"dirt"],[5,0,4,"grass_top"],[5,-1,4,"dirt"],[5,0,5,"grass_top"],[5,-1,5,"dirt"],[0,1,0,"log"],[0,1,1,"stone"],[0,1,2,"stone"],[0,1,3,"stone"],[0,1,4,"log"],[1,1,0,"stone"],[1,1,4,"stone"],[2,1,4,"stone"],[3,1,0,"stone"],[3,1,4,"stone"],[4,1,0,"log"],[4,1,1,"stone"],[4,1,2,"stone"],[4,1,3,"stone"],[4,1,4,"log"],[0,2,0,"log"],[0,2,1,"stone"],[0,2,2,"glass"],[0,2,3,"stone"],[0,2,4,"log"],[1,2,0,"stone"],[1,2,4,"stone"],[2,2,4,"glass"],[3,2,0,"stone"],[3,2,4,"stone"],[4,2,0,"log"],[4,2,1,"stone"],[4,2,2,"glass"],[4,2,3,"stone"],[4,2,4,"log"],[0,3,0,"log"],[0,3,1,"stone"],[0,3,2,"stone"],[0,3,3,"stone"],[0,3,4,"log"],[1,3,0,"stone"],[1,3,4,"stone"],[2,3,0,"stone"],[2,3,4,"stone"],[3,3,0,"stone"],[3,3,4,"stone"],[4,3,0,"log"],[4,3,1,"stone"],[4,3,2,"stone"],[4,3,3,"stone"],[4,3,4,"log"],[0,4,0,"log"],[0,4,1,"stone"],[0,4,2,"glass"],[0,4,3,"stone"],[0,4,4,"log"],[1,4,0,"stone"],[1,4,4,"stone"],[2,4,0,"glass"],[2,4,4,"glass"],[3,4,0,"stone"],[3,4,4,"stone"],[4,4,0,"log"],[4,4,1,"stone"],[4,4,2,"glass"],[4,4,3,"stone"],[4,4,4,"log"],[0,5,0,"log"],[0,5,1,"stone"],[0,5,2,"stone"],[0,5,3,"stone"],[0,5,4,"log"],[1,5,0,"stone"],[1,5,4,"stone"],[2,5,0,"stone"],[2,5,4,"stone"],[3,5,0,"stone"],[3,5,4,"stone"],[4,5,0,"log"],[4,5,1,"stone"],[4,5,2,"stone"],[4,5,3,"stone"],[4,5,4,"log"],[2,1,0,"door_low"],[2,2,0,"door_up"],[0,6,0,"stone"],[0,6,1,"stone"],[0,6,2,"stone"],[0,6,3,"stone"],[0,6,4,"stone"],[1,6,0,"stone"],[1,6,4,"stone"],[2,6,0,"stone"],[2,6,4,"stone"],[3,6,0,"stone"],[3,6,4,"stone"],[4,6,0,"stone"],[4,6,1,"stone"],[4,6,2,"stone"],[4,6,3,"stone"],[4,6,4,"stone"],[2,6,2,"glow"]],"porch":[[-2,0,-2,"grass_top"],[-2,-1,-2,"dirt"],[-2,0,-1,"grass_top"],[-2,-1,-1,"dirt"],[-2,0,0,"grass_top"],[-2,-1,0,"dirt"],[-2,0,1,"grass_top"],[-2,-1,1,"dirt"],[-2,0,2,"grass_top"],[-2,-1,2,"dirt"],[-2,0,3,"grass_top"],[-2,-1,3,"dirt"],[-2,0,4,"grass_top"],[-2,-1,4,"dirt"],[-2,0,5,"grass_top"],[-2,-1,5,"dirt"],[-2,0,6,"grass_top"],[-2,-1,6,"dirt"],[-2,0,7,"grass_top"],[-2,-1,7,"dirt"],[-2,0,8,"grass_top"],[-2,-1,8,"dirt"],[-1,0,-2,"grass_top"],[-1,-1,-2,"dirt"],[-1,0,-1,"grass_top"],[-1,-1,-1,"dirt"],[-1,0,0,"grass_top"],[-1,-1,0,"dirt"],[-1,0,1,"grass_top"],[-1,-1,1,"dirt"],[-1,0,2,"grass_top"],[-1,-1,2,"dirt"],[-1,0,3,"grass_top"],[-1,-1,3,"dirt"],[-1,0,4,"grass_top"],[-1,-1,4,"dirt"],[-1,0,5,"grass_top"],[-1,-1,5,"dirt"],[-1,0,6,"grass_top"],[-1,-1,6,"dirt"],[-1,0,7,"grass_top"],[-1,-1,7,"dirt"],[-1,0,8,"grass_top"],[-1,-1,8,"dirt"],[0,0,-2,"grass_top"],[0,-1,-2,"dirt"],[0,0,-1,"grass_top"],[0,-1,-1,"dirt"],[0,0,0,"grass_top"],[0,-1,0,"dirt"],[0,0,1,"grass_top"],[0,-1,1,"dirt"],[0,0,2,"grass_top"],[0,-1,2,"dirt"],[0,0,3,"grass_top"],[0,-1,3,"dirt"],[0,0,4,"grass_top"],[0,-1,4,"dirt"],[0,0,5,"grass_top"],[0,-1,5,"dirt"],[0,0,6,"grass_top"],[0,-1,6,"dirt"],[0,0,7,"grass_top"],[0,-1,7,"dirt"],[0,0,8,"grass_top"],[0,-1,8,"dirt"],[1,0,-2,"grass_top"],[1,-1,-2,"dirt"],[1,0,-1,"grass_top"],[1,-1,-1,"dirt"],[1,0,0,"grass_top"],[1,-1,0,"dirt"],[1,0,1,"grass_top"],[1,-1,1,"dirt"],[1,0,2,"grass_top"],[1,-1,2,"dirt"],[1,0,3,"grass_top"],[1,-1,3,"dirt"],[1,0,4,"grass_top"],[1,-1,4,"dirt"],[1,0,5,"grass_top"],[1,-1,5,"dirt"],[1,0,6,"grass_top"],[1,-1,6,"dirt"],[1,0,7,"grass_top"],[1,-1,7,"dirt"],[1,0,8,"grass_top"],[1,-1,8,"dirt"],[2,0,-2,"grass_top"],[2,-1,-2,"dirt"],[2,0,-1,"grass_top"],[2,-1,-1,"dirt"],[2,0,0,"grass_top"],[2,-1,0,"dirt"],[2,0,1,"grass_top"],[2,-1,1,"dirt"],[2,0,2,"grass_top"],[2,-1,2,"dirt"],[2,0,3,"grass_top"],[2,-1,3,"dirt"],[2,0,4,"grass_top"],[2,-1,4,"dirt"],[2,0,5,"grass_top"],[2,-1,5,"dirt"],[2,0,6,"grass_top"],[2,-1,6,"dirt"],[2,0,7,"grass_top"],[2,-1,7,"dirt"],[2,0,8,"grass_top"],[2,-1,8,"dirt"],[3,0,-2,"grass_top"],[3,-1,-2,"dirt"],[3,0,-1,"grass_top"],[3,-1,-1,"dirt"],[3,0,0,"grass_top"],[3,-1,0,"dirt"],[3,0,1,"grass_top"],[3,-1,1,"dirt"],[3,0,2,"grass_top"],[3,-1,2,"dirt"],[3,0,3,"grass_top"],[3,-1,3,"dirt"],[3,0,4,"grass_top"],[3,-1,4,"dirt"],[3,0,5,"grass_top"],[3,-1,5,"dirt"],[3,0,6,"grass_top"],[3,-1,6,"dirt"],[3,0,7,"grass_top"],[3,-1,7,"dirt"],[3,0,8,"grass_top"],[3,-1,8,"dirt"],[4,0,-2,"grass_top"],[4,-1,-2,"dirt"],[4,0,-1,"grass_top"],[4,-1,-1,"dirt"],[4,0,0,"grass_top"],[4,-1,0,"dirt"],[4,0,1,"grass_top"],[4,-1,1,"dirt"],[4,0,2,"grass_top"],[4,-1,2,"dirt"],[4,0,3,"grass_top"],[4,-1,3,"dirt"],[4,0,4,"grass_top"],[4,-1,4,"dirt"],[4,0,5,"grass_top"],[4,-1,5,"dirt"],[4,0,6,"grass_top"],[4,-1,6,"dirt"],[4,0,7,"grass_top"],[4,-1,7,"dirt"],[4,0,8,"grass_top"],[4,-1,8,"dirt"],[5,0,-2,"grass_top"],[5,-1,-2,"dirt"],[5,0,-1,"grass_top"],[5,-1,-1,"dirt"],[5,0,0,"grass_top"],[5,-1,0,"dirt"],[5,0,1,"grass_top"],[5,-1,1,"dirt"],[5,0,2,"grass_top"],[5,-1,2,"dirt"],[5,0,3,"grass_top"],[5,-1,3,"dirt"],[5,0,4,"grass_top"],[5,-1,4,"dirt"],[5,0,5,"grass_top"],[5,-1,5,"dirt"],[5,0,6,"grass_top"],[5,-1,6,"dirt"],[5,0,7,"grass_top"],[5,-1,7,"dirt"],[5,0,8,"grass_top"],[5,-1,8,"dirt"],[6,0,-2,"grass_top"],[6,-1,-2,"dirt"],[6,0,-1,"grass_top"],[6,-1,-1,"dirt"],[6,0,0,"grass_top"],[6,-1,0,"dirt"],[6,0,1,"grass_top"],[6,-1,1,"dirt"],[6,0,2,"grass_top"],[6,-1,2,"dirt"],[6,0,3,"grass_top"],[6,-1,3,"dirt"],[6,0,4,"grass_top"],[6,-1,4,"dirt"],[6,0,5,"grass_top"],[6,-1,5,"dirt"],[6,0,6,"grass_top"],[6,-1,6,"dirt"],[6,0,7,"grass_top"],[6,-1,7,"dirt"],[6,0,8,"grass_top"],[6,-1,8,"dirt"],[7,0,-2,"grass_top"],[7,-1,-2,"dirt"],[7,0,-1,"grass_top"],[7,-1,-1,"dirt"],[7,0,0,"grass_top"],[7,-1,0,"dirt"],[7,0,1,"grass_top"],[7,-1,1,"dirt"],[7,0,2,"grass_top"],[7,-1,2,"dirt"],[7,0,3,"grass_top"],[7,-1,3,"dirt"],[7,0,4,"grass_top"],[7,-1,4,"dirt"],[7,0,5,"grass_top"],[7,-1,5,"dirt"],[7,0,6,"grass_top"],[7,-1,6,"dirt"],[7,0,7,"grass_top"],[7,-1,7,"dirt"],[7,0,8,"grass_top"],[7,-1,8,"dirt"],[8,0,-2,"grass_top"],[8,-1,-2,"dirt"],[8,0,-1,"grass_top"],[8,-1,-1,"dirt"],[8,0,0,"grass_top"],[8,-1,0,"dirt"],[8,0,1,"grass_top"],[8,-1,1,"dirt"],[8,0,2,"grass_top"],[8,-1,2,"dirt"],[8,0,3,"grass_top"],[8,-1,3,"dirt"],[8,0,4,"grass_top"],[8,-1,4,"dirt"],[8,0,5,"grass_top"],[8,-1,5,"dirt"],[8,0,6,"grass_top"],[8,-1,6,"dirt"],[8,0,7,"grass_top"],[8,-1,7,"dirt"],[8,0,8,"grass_top"],[8,-1,8,"dirt"],[0,1,2,"log"],[0,1,3,"planks"],[0,1,4,"planks"],[0,1,5,"planks"],[0,1,6,"log"],[1,1,2,"planks"],[1,1,6,"planks"],[2,1,2,"planks"],[2,1,6,"planks"],[3,1,6,"planks"],[4,1,2,"planks"],[4,1,6,"planks"],[5,1,2,"planks"],[5,1,6,"planks"],[6,1,2,"log"],[6,1,3,"planks"],[6,1,4,"planks"],[6,1,5,"planks"],[6,1,6,"log"],[0,2,2,"log"],[0,2,3,"glass"],[0,2,4,"planks"],[0,2,5,"glass"],[0,2,6,"log"],[1,2,2,"glass"],[1,2,6,"glass"],[2,2,2,"planks"],[2,2,6,"planks"],[3,2,6,"planks"],[4,2,2,"planks"],[4,2,6,"planks"],[5,2,2,"glass"],[5,2,6,"glass"],[6,2,2,"log"],[6,2,3,"glass"],[6,2,4,"planks"],[6,2,5,"glass"],[6,2,6,"log"],[3,1,2,"door_low"],[3,2,2,"door_up"],[0,1,0,"log"],[0,2,0,"log"],[6,1,0,"log"],[6,2,0,"log"],[0,3,0,"slab"],[0,3,1,"slab"],[0,3,2,"slab"],[1,3,0,"slab"],[1,3,1,"slab"],[1,3,2,"slab"],[2,3,0,"slab"],[2,3,1,"slab"],[2,3,2,"slab"],[3,3,0,"slab"],[3,3,1,"slab"],[3,3,2,"slab"],[4,3,0,"slab"],[4,3,1,"slab"],[4,3,2,"slab"],[5,3,0,"slab"],[5,3,1,"slab"],[5,3,2,"slab"],[6,3,0,"slab"],[6,3,1,"slab"],[6,3,2,"slab"],[0,3,2,"stone"],[0,3,3,"stone"],[0,3,4,"stone"],[0,3,5,"stone"],[0,3,6,"stone"],[1,3,2,"stone"],[1,3,3,"stone"],[1,3,4,"stone"],[1,3,5,"stone"],[1,3,6,"stone"],[2,3,2,"stone"],[2,3,3,"stone"],[2,3,4,"stone"],[2,3,5,"stone"],[2,3,6,"stone"],[3,3,2,"stone"],[3,3,3,"stone"],[3,3,4,"stone"],[3,3,5,"stone"],[3,3,6,"stone"],[4,3,2,"stone"],[4,3,3,"stone"],[4,3,4,"stone"],[4,3,5,"stone"],[4,3,6,"stone"],[5,3,2,"stone"],[5,3,3,"stone"],[5,3,4,"stone"],[5,3,5,"stone"],[5,3,6,"stone"],[6,3,2,"stone"],[6,3,3,"stone"],[6,3,4,"stone"],[6,3,5,"stone"],[6,3,6,"stone"],[1,4,3,"stone"],[1,4,4,"stone"],[1,4,5,"stone"],[2,4,3,"stone"],[2,4,4,"stone"],[2,4,5,"stone"],[3,4,3,"stone"],[3,4,4,"stone"],[3,4,5,"stone"],[4,4,3,"stone"],[4,4,4,"stone"],[4,4,5,"stone"],[5,4,3,"stone"],[5,4,4,"stone"],[5,4,5,"stone"],[5,1,-1,"glow"]]};
+  // Aktuell anzuzeigendes Hausmodell (Standard: Eichenhaus)
+  var house3dId = 'starter';
   function houseVoxels() {
-    var b = [];
-    function add(x, y, z, t) { b.push({ x: x, y: y, z: z, t: t }); }
-    var N = 7;
-    for (var x = -1; x < N + 1; x++) for (var z = -1; z < N + 1; z++) { add(x, 0, z, 'grass_top'); add(x, -1, z, 'dirt'); }
-    for (var y = 1; y < 4; y++) for (var x2 = 0; x2 < N; x2++) for (var z2 = 0; z2 < N; z2++) {
-      var edge = x2 === 0 || x2 === N - 1 || z2 === 0 || z2 === N - 1;
-      if (!edge) continue;
-      var corner = (x2 === 0 || x2 === N - 1) && (z2 === 0 || z2 === N - 1);
-      if (z2 === 0 && x2 === 3 && (y === 1 || y === 2)) continue;
-      if (y === 2 && !corner && (((z2 === 0 || z2 === N - 1) && (x2 === 2 || x2 === 4)) || ((x2 === 0 || x2 === N - 1) && (z2 === 2 || z2 === 4)))) { add(x2, y, z2, 'glass'); continue; }
-      add(x2, y, z2, corner ? 'log' : (y === 2 ? 'stripped' : 'planks'));
-    }
-    add(3, 1, 0, 'door_low'); add(3, 2, 0, 'door_up');
-    function ring(y, ins, t) { var lo = ins, hi = N - 1 - ins; for (var x = lo; x <= hi; x++) for (var z = lo; z <= hi; z++) if (x === lo || x === hi || z === lo || z === hi) add(x, y, z, t); }
-    ring(4, 0, 'slab'); ring(5, 1, 'stone'); ring(6, 2, 'stone'); add(3, 7, 3, 'stone');
-    add(1, 5, 1, 'cobble'); add(1, 6, 1, 'cobble'); add(1, 7, 1, 'cobble');
-    add(5, 1, -1, 'glow');
-    return b;
+    var m = HOUSE_MODELS[house3dId] || HOUSE_MODELS.starter;
+    return m.map(function (a) { return { x: a[0], y: a[1], z: a[2], t: a[3] }; });
   }
 
   var b3d = null; // { renderer, scene, camera, pivot, raf, rotY, rotX, auto, camDist }
@@ -2344,6 +2331,7 @@
   }
 
   // --- Auswahl der Baupläne ---
+  var bpPreviewCache = {};
   function renderBuildPicker() {
     $('build-mode-bar').style.display = 'none';
     $('build-canvas').style.display = 'none';
@@ -2355,20 +2343,11 @@
     BLUEPRINTS.forEach(function (bp) {
       var card = el('div', 'bp-card');
       var done = state.builtProjects && state.builtProjects[bp.id];
-      // Mini-Vorschau
       var prev = el('div', 'bp-preview');
-      var cols = bp.grid[0].length;
-      prev.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
-      bp.grid.forEach(function (line) {
-        for (var c = 0; c < line.length; c++) {
-          var ch = line[c];
-          var pc = el('div', 'bp-px');
-          if (ch !== '.' && ch !== ' ' && BUILD_TEX[ch]) {
-            pc.style.backgroundImage = "url('" + A + 'build/' + BUILD_TEX[ch] + "')";
-          }
-          prev.appendChild(pc);
-        }
-      });
+      var pim = el('img', 'bp-preview-img');
+      pim.alt = bp.name;
+      if (bpPreviewCache[bp.id]) pim.src = bpPreviewCache[bp.id];
+      prev.appendChild(pim);
       card.appendChild(prev);
       var label = el('div', 'bp-name', bp.name + (done ? ' \u2713' : ''));
       card.appendChild(label);
@@ -2377,6 +2356,81 @@
         startBuildProject(bp);
       });
       picker.appendChild(card);
+    });
+    // 3D-Vorschaubilder erzeugen (einmalig, lazy via three.js)
+    generateBuildPreviews();
+  }
+
+  function generateBuildPreviews() {
+    var need = BLUEPRINTS.some(function (bp) { return !bpPreviewCache[bp.id]; });
+    if (!need) return;
+    loadThree(function () {
+      var THREE = window.THREE;
+      var SZ = 220;
+      var rc = document.createElement('canvas');
+      rc.width = SZ; rc.height = SZ;
+      var rnd = new THREE.WebGLRenderer({ canvas: rc, antialias: true, alpha: true, preserveDrawingBuffer: true });
+      rnd.setSize(SZ, SZ);
+      if (THREE.sRGBEncoding) rnd.outputEncoding = THREE.sRGBEncoding;
+      rnd.shadowMap.enabled = true; rnd.shadowMap.type = THREE.PCFSoftShadowMap;
+      var loader = new THREE.TextureLoader();
+      var matCache = {};
+      function mat(name) {
+        if (matCache[name]) return matCache[name];
+        var glass = (name === 'glass');
+        var m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0,
+          transparent: glass, opacity: glass ? 0.6 : 1,
+          emissive: name === 'glow' ? new THREE.Color(0xffd27a) : new THREE.Color(0), emissiveIntensity: name === 'glow' ? 0.7 : 0 });
+        matCache[name] = m;
+        var uri = BUILD3D_DATA[name];
+        if (uri) loader.load(uri, function (t) { t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding; m.map = t; m.color.set(0xffffff); m.needsUpdate = true; });
+        return m;
+      }
+      var geo = new THREE.BoxGeometry(1, 1, 1);
+
+      function renderOne(bp) {
+        var scene = new THREE.Scene();
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x88aa77, 0.6));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        var sun = new THREE.DirectionalLight(0xfff4e0, 0.9);
+        sun.position.set(10, 18, 8); scene.add(sun);
+        var camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
+        var model = HOUSE_MODELS[bp.id] || HOUSE_MODELS.starter;
+        var group = new THREE.Group();
+        var cx = 0, cy = 0, cz = 0, n = 0;
+        model.forEach(function (a) {
+          var cube = new THREE.Mesh(geo, mat(a[3]));
+          cube.position.set(a[0], a[1], a[2]);
+          group.add(cube); cx += a[0]; cy += a[1]; cz += a[2]; n++;
+        });
+        cx /= n; cy /= n; cz /= n;
+        group.position.set(-cx, -cy, -cz);
+        var pivot = new THREE.Group(); pivot.add(group);
+        pivot.rotation.y = 0.7; pivot.rotation.x = 0.5;
+        scene.add(pivot);
+        camera.position.set(0, 2, 13); camera.lookAt(0, 0, 0);
+        // zwei Frames, damit Texturen sicher gezeichnet sind
+        rnd.render(scene, camera);
+        return rc.toDataURL('image/png');
+      }
+
+      // Verzögert rendern, damit Texturen geladen sind
+      var tries = 0;
+      function pass() {
+        tries++;
+        BLUEPRINTS.forEach(function (bp) {
+          bpPreviewCache[bp.id] = renderOne(bp);
+        });
+        // In sichtbare Karten einsetzen
+        var imgs = $('build-picker').querySelectorAll('.bp-preview-img');
+        var i = 0;
+        imgs.forEach(function (im) {
+          if (BLUEPRINTS[i]) im.src = bpPreviewCache[BLUEPRINTS[i].id];
+          i++;
+        });
+        if (tries < 3) setTimeout(pass, 180); // Texturen nachladen, neu rendern
+      }
+      setTimeout(pass, 120);
     });
   }
 
