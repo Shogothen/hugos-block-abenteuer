@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 43;
-  var AUDIO_VER = '?v=43';
+  var APP_V = 44;
+  var AUDIO_VER = '?v=44';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2170,6 +2170,35 @@
     return m.map(function (a) { return { x: a[0], y: a[1], z: a[2], t: a[3] }; });
   }
 
+  // Bau-Schritte: baubare Würfel (y>=1) in ~12 handhabbare Gruppen, unten->oben, hinten->vorne
+  function buildSteps(modelId) {
+    var m = HOUSE_MODELS[modelId] || HOUSE_MODELS.starter;
+    var buildable = m.filter(function (a) { return a[1] >= 1; });
+    var ys = [];
+    buildable.forEach(function (a) { if (ys.indexOf(a[1]) < 0) ys.push(a[1]); });
+    ys.sort(function (a, b) { return a - b; });
+    var TARGET = 12;
+    var perLayer = Math.max(1, Math.round(TARGET / ys.length));
+    var steps = [];
+    ys.forEach(function (y) {
+      var layer = buildable.filter(function (a) { return a[1] === y; });
+      layer.sort(function (a, b) { return (b[2] - a[2]) || (a[0] - b[0]); });
+      var chunk = Math.max(1, Math.ceil(layer.length / perLayer));
+      for (var i = 0; i < layer.length; i += chunk) {
+        steps.push(layer.slice(i, i + chunk).map(function (a) {
+          return { x: a[0], y: a[1], z: a[2], t: a[3] };
+        }));
+      }
+    });
+    return steps;
+  }
+  function groundVoxels(modelId) {
+    var m = HOUSE_MODELS[modelId] || HOUSE_MODELS.starter;
+    return m.filter(function (a) { return a[1] < 1; }).map(function (a) {
+      return { x: a[0], y: a[1], z: a[2], t: a[3] };
+    });
+  }
+
   var b3d = null; // { renderer, scene, camera, pivot, raf, rotY, rotX, auto, camDist }
   function setBtnLabel(id, txt) {
     var btn = $(id);
@@ -2178,13 +2207,12 @@
     if (span) span.textContent = txt; else btn.textContent = txt;
   }
 
-  function build3dStart() {
+  function build3dStart(guided) {
     var wrap = $('build3d-wrap');
     wrap.style.display = 'block';
     $('build3d-hint').textContent = '3D wird geladen ...';
     loadThree(function () {
-      $('build3d-hint').textContent = 'Mit dem Finger drehen';
-      build3dInit();
+      build3dInit(guided);
     });
   }
   function build3dStop() {
@@ -2194,7 +2222,7 @@
     b3d = null;
   }
 
-  function build3dInit() {
+  function build3dInit(guided) {
     var THREE = window.THREE;
     var canvas = $('build3d-canvas');
     var wrap = $('build3d-wrap');
@@ -2210,7 +2238,6 @@
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
 
-    // Himmel-Dome mit Verlauf
     var skyGeo = new THREE.SphereGeometry(90, 16, 16);
     var skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide,
@@ -2233,7 +2260,6 @@
     var loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
     var matCache = {};
-    // Ersatzfarben, falls eine Textur fehlt — Haus bleibt erkennbar statt weiß
     var FALLBACK = {
       grass_top: 0x6aa84f, dirt: 0x8b5a2b, planks: 0xb8895a, log: 0x6b4f2a,
       stripped: 0xc8a06a, stone: 0x9a9a9a, cobble: 0x888888, glass: 0xadd8e6,
@@ -2264,37 +2290,150 @@
 
     var group = new THREE.Group();
     var geo = new THREE.BoxGeometry(1, 1, 1);
-    houseVoxels().forEach(function (bk) {
+    var modelId = (state.buildProject && state.buildProject.id) || house3dId;
+
+    // Zentrum aus allen Modell-Würfeln für Pivot
+    var all = HOUSE_MODELS[modelId] || HOUSE_MODELS.starter;
+    var cx = 0, cy = 0, cz = 0;
+    all.forEach(function (a) { cx += a[0]; cy += a[1]; cz += a[2]; });
+    cx /= all.length; cy /= all.length; cz /= all.length;
+
+    var ghostMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.18, depthWrite: false });
+    var ghostMeshes = []; // aktuelle Schritt-Geisterwürfel (pulsieren)
+
+    // Boden immer fest
+    groundVoxels(modelId).forEach(function (bk) {
       var cube = new THREE.Mesh(geo, mat(bk.t));
       cube.position.set(bk.x, bk.y, bk.z);
-      cube.castShadow = (bk.y >= 0); cube.receiveShadow = true;
+      cube.receiveShadow = true;
       group.add(cube);
     });
-    group.position.set(-3, -2.5, -3);
+
+    group.position.set(-cx, -cy, -cz);
     var pivot = new THREE.Group(); pivot.add(group); scene.add(pivot);
 
-    b3d = { THREE: THREE, renderer: renderer, scene: scene, camera: camera, pivot: pivot,
-      rotY: 0.7, rotX: 0.42, auto: true, camDist: 32, camTarget: 27, W: W, H: H };
+    b3d = {
+      THREE: THREE, renderer: renderer, scene: scene, camera: camera, pivot: pivot,
+      group: group, geo: geo, mat: mat, ghostMat: ghostMat, ghostMeshes: ghostMeshes,
+      rotY: 0.7, rotX: 0.42, auto: true, camDist: 32, camTarget: 27, W: W, H: H,
+      guided: !!guided, modelId: modelId,
+      raycaster: new THREE.Raycaster(), pulse: 0
+    };
+
+    if (guided) {
+      // Bau-Schritte vorbereiten
+      if (!state.buildProject.steps) {
+        // pro Projekt fortschreiten; placedSteps = Anzahl gesetzter Schritte
+        state.buildProject.placedSteps = state.buildProject.placedSteps || 0;
+      }
+      b3d.steps = buildSteps(modelId);
+      build3dRenderProgress();
+    } else {
+      // freie Ansicht: ganzes Haus
+      houseVoxels().forEach(function (bk) {
+        if (bk.y < 1) return;
+        var cube = new THREE.Mesh(geo, mat(bk.t));
+        cube.position.set(bk.x, bk.y, bk.z);
+        cube.castShadow = true; cube.receiveShadow = true;
+        group.add(cube);
+      });
+    }
 
     setupBuild3dInput(canvas);
     build3dLoop();
   }
 
+  // Setzt platzierte Schritte fest, zeigt aktuellen Schritt als Geister
+  function build3dRenderProgress() {
+    if (!b3d || !b3d.guided) return;
+    var THREE = b3d.THREE;
+    // alte Geister entfernen
+    b3d.ghostMeshes.forEach(function (gm) { b3d.group.remove(gm); });
+    b3d.ghostMeshes = [];
+    var placed = state.buildProject.placedSteps || 0;
+    // platzierte Schritte als feste Blöcke (nur einmal neu aufbauen ist teuer; wir bauen alles platzierte)
+    // markieren bereits hinzugefügte über b3d.builtCount
+    if (b3d.builtCount === undefined) b3d.builtCount = 0;
+    for (var s = b3d.builtCount; s < placed; s++) {
+      b3d.steps[s].forEach(function (bk) {
+        var cube = new THREE.Mesh(b3d.geo, b3d.mat(bk.t));
+        cube.position.set(bk.x, bk.y, bk.z);
+        cube.castShadow = true; cube.receiveShadow = true;
+        b3d.group.add(cube);
+      });
+    }
+    b3d.builtCount = placed;
+    // aktueller Schritt als Geister
+    if (placed < b3d.steps.length) {
+      b3d.steps[placed].forEach(function (bk) {
+        var gm = new THREE.Mesh(b3d.geo, b3d.ghostMat.clone());
+        gm.position.set(bk.x, bk.y, bk.z);
+        gm.userData.isGhost = true;
+        b3d.group.add(gm);
+        b3d.ghostMeshes.push(gm);
+      });
+      $('build3d-hint').textContent = 'Tippe die leuchtenden Bl\u00f6cke! (' + placed + ' / ' + b3d.steps.length + ')';
+    } else {
+      $('build3d-hint').textContent = 'Fertig gebaut! Toll gemacht!';
+    }
+  }
+
+  function build3dPlaceStep() {
+    if (!b3d || !b3d.guided) return;
+    var placed = state.buildProject.placedSteps || 0;
+    if (placed >= b3d.steps.length) return;
+    state.buildProject.placedSteps = placed + 1;
+    saveState();
+    Sound.mine();
+    var done = state.buildProject.placedSteps >= b3d.steps.length;
+    build3dRenderProgress();
+    if (done) {
+      state.builtProjects = state.builtProjects || {};
+      state.builtProjects[b3d.modelId] = true;
+      saveState();
+      Sound.levelup();
+      say('haus_2', 'Super! Du hast das Haus gebaut!');
+    }
+  }
+
   function setupBuild3dInput(canvas) {
-    var dragging = false, lx = 0, ly = 0;
-    function down(x, y) { dragging = true; b3d.auto = false; lx = x; ly = y; }
+    var dragging = false, moved = false, lx = 0, ly = 0, downX = 0, downY = 0;
+    function down(x, y) { dragging = true; moved = false; b3d.auto = false; lx = x; ly = y; downX = x; downY = y; }
     function move(x, y) {
       if (!dragging || !b3d) return;
+      if (Math.abs(x - downX) > 6 || Math.abs(y - downY) > 6) moved = true;
       b3d.rotY += (x - lx) * 0.01; b3d.rotX += (y - ly) * 0.01;
       b3d.rotX = Math.max(0.05, Math.min(1.1, b3d.rotX)); lx = x; ly = y;
     }
-    function up() { dragging = false; }
+    function up(x, y) {
+      dragging = false;
+      // Tippen (nicht gezogen) auf Geisterwürfel -> Schritt setzen
+      if (!moved && b3d && b3d.guided) {
+        tryTapGhost(x, y);
+      }
+    }
     canvas.addEventListener('mousedown', function (e) { down(e.clientX, e.clientY); });
     window.addEventListener('mousemove', function (e) { move(e.clientX, e.clientY); });
-    window.addEventListener('mouseup', up);
+    window.addEventListener('mouseup', function (e) { up(e.clientX, e.clientY); });
     canvas.addEventListener('touchstart', function (e) { var t = e.touches[0]; down(t.clientX, t.clientY); }, { passive: true });
     canvas.addEventListener('touchmove', function (e) { var t = e.touches[0]; move(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
-    canvas.addEventListener('touchend', up);
+    canvas.addEventListener('touchend', function (e) {
+      var t = (e.changedTouches && e.changedTouches[0]) || {};
+      up(t.clientX, t.clientY);
+    });
+  }
+
+  function tryTapGhost(clientX, clientY) {
+    if (!b3d || !b3d.ghostMeshes.length) return;
+    var THREE = b3d.THREE;
+    var rect = b3d.renderer.domElement.getBoundingClientRect();
+    var nx = ((clientX - rect.left) / rect.width) * 2 - 1;
+    var ny = -((clientY - rect.top) / rect.height) * 2 + 1;
+    b3d.raycaster.setFromCamera({ x: nx, y: ny }, b3d.camera);
+    var hits = b3d.raycaster.intersectObjects(b3d.ghostMeshes, false);
+    if (hits.length > 0) {
+      build3dPlaceStep();
+    }
   }
 
   function build3dLoop() {
@@ -2306,6 +2445,12 @@
     b3d.pivot.rotation.x = b3d.rotX;
     b3d.camera.position.set(0, 6.5, b3d.camDist);
     b3d.camera.lookAt(0, 1.5, 0);
+    // Geister pulsieren
+    if (b3d.ghostMeshes.length) {
+      b3d.pulse += 0.06;
+      var op = 0.32 + Math.sin(b3d.pulse) * 0.22;
+      b3d.ghostMeshes.forEach(function (gm) { gm.material.opacity = op; });
+    }
     b3d.renderer.render(b3d.scene, b3d.camera);
   }
 
@@ -2315,8 +2460,17 @@
   function renderBuild() {
     buildPanorama($('build-panorama'));
     renderBuildCoins();
-    if (state.buildProject) renderBuildProject();
-    else renderBuildPicker();
+    if (state.buildProject) {
+      // laufendes Projekt: geführtes 3D fortsetzen
+      house3dId = state.buildProject.id;
+      $('build-picker').style.display = 'none';
+      $('build-canvas').style.display = 'none';
+      $('build-mode-bar').style.display = 'flex';
+      build3dStart(true);
+    } else {
+      build3dStop();
+      renderBuildPicker();
+    }
   }
 
   function renderBuildCoins() {
@@ -2455,11 +2609,16 @@
       return;
     }
     payCost(bp.cost);
-    state.buildProject = { id: bp.id, placed: {} };
+    state.buildProject = { id: bp.id, placedSteps: 0 };
+    house3dId = bp.id;
     Sound.mine();
-    say('bauplan', 'Los geht\u2019s! Tippe die Bl\u00f6cke, einer nach dem anderen.');
+    say('bauplan', 'Los geht\u2019s! Dreh das Haus und tippe die leuchtenden Bl\u00f6cke!');
     renderBuildCoins();
-    renderBuild();
+    // 2D-Auswahl ausblenden, geführtes 3D starten
+    $('build-picker').style.display = 'none';
+    $('build-canvas').style.display = 'none';
+    $('build-mode-bar').style.display = 'flex';
+    build3dStart(true);
   }
 
   // --- Geführtes Setzen ---
@@ -3293,22 +3452,10 @@
   $('btn-start-game').addEventListener('click', startSession);
   $('btn-start-home').addEventListener('click', function () { renderHome(); show('screen-home'); });
   $('btn-start-build').addEventListener('click', function () { renderBuild(); show('screen-build'); });
-  $('btn-build-back').addEventListener('click', function () { build3dStop(); setBtnLabel('btn-build-3d', '3D ansehen'); renderStart(); show('screen-start'); });
-  $('btn-build-3d').addEventListener('click', function () {
-    var on = $('build3d-wrap').style.display !== 'block';
-    if (on) {
-      $('build-picker').style.display = 'none';
-      $('build-canvas').style.display = 'none';
-      build3dStart();
-      setBtnLabel('btn-build-3d', '2D zur\u00fcck');
-    } else {
-      build3dStop();
-      setBtnLabel('btn-build-3d', '3D ansehen');
-      renderBuild();
-    }
-  });
+  $('btn-build-back').addEventListener('click', function () { build3dStop(); renderStart(); show('screen-start'); });
 
   $('btn-build-choose').addEventListener('click', function () {
+    build3dStop();
     state.buildProject = null;
     saveState();
     renderBuild();
