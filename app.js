@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 55;
-  var AUDIO_VER = '?v=55';
+  var APP_V = 56;
+  var AUDIO_VER = '?v=56';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2494,13 +2494,14 @@
   //   Anordnung (Minecraft Standard):
   //     [D][W][D][W]  obere Reihe: oben/unten-Flächen + ...
   //   Wir setzen pro Würfelseite die korrekten Pixel-Rechtecke.
-  function buildMob(THREE, parts, mobMat) {
+  function buildMob(THREE, parts, mobMat, scale) {
+    scale = scale || 1;
     var grp = new THREE.Group();
     parts.forEach(function (p) {
       var W = p.box[0], H = p.box[1], D = p.box[2];
       var tw = p.texSize[0], th = p.texSize[1];
       var uo = p.uv[0], vo = p.uv[1];
-      var geo = new THREE.BoxGeometry(p.s[0], p.s[1], p.s[2]);
+      var geo = new THREE.BoxGeometry(p.s[0] * scale, p.s[1] * scale, p.s[2] * scale);
       // Minecraft UV-Netz: Flächen-Rechtecke in Pixeln (x,y,w,h) ab (uo,vo)
       // Reihenfolge der BoxGeometry-Flächen: +x,-x,+y,-y,+z,-z
       // Netz-Layout: 
@@ -2530,7 +2531,7 @@
       });
       uvAttr.needsUpdate = true;
       var mesh = new THREE.Mesh(geo, mobMat[p.tex]);
-      mesh.position.set(p.c[0], p.c[1], p.c[2]);
+      mesh.position.set(p.c[0] * scale, p.c[1] * scale, p.c[2] * scale);
       mesh.castShadow = true;
       grp.add(mesh);
     });
@@ -2679,12 +2680,13 @@
     });
     // Freigeschaltete Begleiter als echte 3D-Tiere in die Welt stellen
     function mobTexMat(name) {
-      var mm = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, transparent: true, alphaTest: 0.5 });
+      var fb = { skin_pig: 0xeca0a0, skin_chicken: 0xdddddd, skin_cat: 0xc8a878, skin_wolf: 0xbfbfbf, skin_fox: 0xd0763a, skin_axolotl: 0xf0a8c0 };
+      var mm = new THREE.MeshStandardMaterial({ color: fb[name] || 0xcccccc, roughness: 0.95, metalness: 0 });
       var uri = BUILD3D_DATA[name];
       if (uri) loader.load(uri, function (t) {
         t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter;
         if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding;
-        mm.map = t; mm.needsUpdate = true;
+        mm.map = t; mm.color.set(0xffffff); mm.needsUpdate = true;
       });
       return mm;
     }
@@ -2724,7 +2726,7 @@
     $('myworld-hint').textContent = diag;
     (state.worldAnimals || []).forEach(function (an) {
       if (!MOB_MODELS[an.kind]) return;
-      var ag = buildMob(THREE, MOB_MODELS[an.kind], mobMatFor(an.kind));
+      var ag = buildMob(THREE, MOB_MODELS[an.kind], mobMatFor(an.kind), 3);
       ag.position.set(an.x, 0, an.z);
       ag.userData.baseX = an.x; ag.userData.baseZ = an.z;
       ag.userData.phase = Math.random() * Math.PI * 2;
