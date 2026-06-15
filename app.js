@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 52;
-  var AUDIO_VER = '?v=52';
+  var APP_V = 53;
+  var AUDIO_VER = '?v=53';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2697,22 +2697,27 @@
     }
     var animGroups = [];
     // Welche Begleiter platziert? state.worldAnimals = [{kind,x,z}]; Grundausstattung = alle freigeschalteten
-    if (!state.worldAnimals) {
-      state.worldAnimals = [];
-      var spots = [
-        [MW_MARGIN + 3, MW_MARGIN + 3], [MW_MARGIN + inner - 4, MW_MARGIN + 3],
-        [MW_MARGIN + 3, MW_MARGIN + inner - 4], [MW_MARGIN + inner - 4, MW_MARGIN + inner - 4],
-        [MW_MARGIN + Math.floor(inner / 2) - 4, MW_MARGIN + 4], [MW_MARGIN + Math.floor(inner / 2) + 3, MW_MARGIN + inner - 5]
-      ];
-      var si = 0;
-      PETS.forEach(function (pet) {
-        if (state.pets && state.pets[pet.id] && MOB_MODELS[pet.id]) {
-          var s = spots[si % spots.length]; si++;
-          state.worldAnimals.push({ kind: pet.id, x: s[0], z: s[1] });
-        }
-      });
-      saveState();
-    }
+    // Freigeschaltete Begleiter mit der Welt abgleichen: fehlende automatisch ergänzen
+    // Begleiter-IDs sind deutsch, Tiermodelle englisch -> Zuordnung
+    var PET_TO_MOB = { huhn: 'chicken', schwein: 'pig', katze: 'cat', wolf: 'wolf', fuchs: 'fox', axolotl: 'axolotl' };
+    if (!state.worldAnimals) state.worldAnimals = [];
+    var spots = [
+      [MW_MARGIN + 3, MW_MARGIN + 3], [MW_MARGIN + inner - 4, MW_MARGIN + 3],
+      [MW_MARGIN + 3, MW_MARGIN + inner - 4], [MW_MARGIN + inner - 4, MW_MARGIN + inner - 4],
+      [MW_MARGIN + Math.floor(inner / 2) - 4, MW_MARGIN + 4], [MW_MARGIN + Math.floor(inner / 2) + 3, MW_MARGIN + inner - 5]
+    ];
+    var already = {};
+    state.worldAnimals.forEach(function (a) { already[a.kind] = true; });
+    var changed = false;
+    PETS.forEach(function (pet) {
+      var mob = PET_TO_MOB[pet.id];
+      if (state.pets && state.pets[pet.id] && mob && MOB_MODELS[mob] && !already[mob]) {
+        var s = spots[state.worldAnimals.length % spots.length];
+        state.worldAnimals.push({ kind: mob, x: s[0], z: s[1] });
+        changed = true;
+      }
+    });
+    if (changed) saveState();
     (state.worldAnimals || []).forEach(function (an) {
       if (!MOB_MODELS[an.kind]) return;
       var ag = buildMob(THREE, MOB_MODELS[an.kind], mobMatFor(an.kind));
