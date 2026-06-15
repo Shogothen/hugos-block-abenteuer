@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 56;
-  var AUDIO_VER = '?v=56';
+  var APP_V = 57;
+  var AUDIO_VER = '?v=57';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -2703,30 +2703,42 @@
     // Begleiter-IDs sind deutsch, Tiermodelle englisch -> Zuordnung
     var PET_TO_MOB = { huhn: 'chicken', schwein: 'pig', katze: 'cat', wolf: 'wolf', fuchs: 'fox', axolotl: 'axolotl' };
     if (!state.worldAnimals) state.worldAnimals = [];
-    var spots = [
-      [MW_MARGIN + 3, MW_MARGIN + 3], [MW_MARGIN + inner - 4, MW_MARGIN + 3],
-      [MW_MARGIN + 3, MW_MARGIN + inner - 4], [MW_MARGIN + inner - 4, MW_MARGIN + inner - 4],
-      [MW_MARGIN + Math.floor(inner / 2) - 4, MW_MARGIN + 4], [MW_MARGIN + Math.floor(inner / 2) + 3, MW_MARGIN + inner - 5]
+    // Freie Plätze für Tiere: in den offenen Grasflächen zwischen Häusern und Rand,
+    // bewusst NICHT auf den Hausplätzen (die liegen bei sx*PLOT+0..7)
+    var hx = {};
+    (state.worldPlacements || []).forEach(function (pl) {
+      hx[pl.sx + ',' + pl.sz] = true;
+    });
+    var spots = [];
+    // Mittelstreifen-Ränder und Lücken zwischen den Plätzen nutzen
+    var cand = [
+      [MW_MARGIN + MW_PLOT - 2, MW_MARGIN + 3],
+      [MW_MARGIN + 3, MW_MARGIN + MW_PLOT - 2],
+      [MW_MARGIN + MW_PLOT - 2, MW_MARGIN + inner - 4],
+      [MW_MARGIN + inner - 4, MW_MARGIN + MW_PLOT - 2],
+      [MW_MARGIN + MW_PLOT - 2, MW_MARGIN + Math.floor(inner / 2)],
+      [MW_MARGIN + 2, MW_MARGIN + Math.floor(inner / 2)]
     ];
-    var already = {};
-    state.worldAnimals.forEach(function (a) { already[a.kind] = true; });
-    var changed = false;
+    spots = cand;
+    // Liste der freigeschalteten Mobs (deutsch->englisch)
+    var wantMobs = [];
     PETS.forEach(function (pet) {
       var mob = PET_TO_MOB[pet.id];
-      if (state.pets && state.pets[pet.id] && mob && MOB_MODELS[mob] && !already[mob]) {
-        var s = spots[state.worldAnimals.length % spots.length];
-        state.worldAnimals.push({ kind: mob, x: s[0], z: s[1] });
-        changed = true;
-      }
+      if (state.pets && state.pets[pet.id] && mob && MOB_MODELS[mob]) wantMobs.push(mob);
     });
-    if (changed) saveState();
+    // worldAnimals komplett neu aus freien Plätzen aufbauen (behebt alte Kollisions-Positionen)
+    state.worldAnimals = wantMobs.map(function (mob, i) {
+      var s = spots[i % spots.length];
+      return { kind: mob, x: s[0], z: s[1] };
+    });
+    saveState();
     // DIAGNOSE (temporär): Version + Begleiter-Status
     var unlockedPets = Object.keys(state.pets || {}).filter(function (k) { return state.pets[k]; });
     var diag = 'v' + APP_V + ' | Begleiter: [' + unlockedPets.join(',') + '] | Tiere: ' + (state.worldAnimals || []).length;
     $('myworld-hint').textContent = diag;
     (state.worldAnimals || []).forEach(function (an) {
       if (!MOB_MODELS[an.kind]) return;
-      var ag = buildMob(THREE, MOB_MODELS[an.kind], mobMatFor(an.kind), 3);
+      var ag = buildMob(THREE, MOB_MODELS[an.kind], mobMatFor(an.kind), 2);
       ag.position.set(an.x, 0, an.z);
       ag.userData.baseX = an.x; ag.userData.baseZ = an.z;
       ag.userData.phase = Math.random() * Math.PI * 2;
@@ -2777,7 +2789,7 @@
       mw3d.animT += 0.02;
       mw3d.animGroups.forEach(function (ag) {
         var ph = mw3d.animT + ag.userData.phase;
-        ag.position.x = ag.userData.baseX + Math.sin(ph) * 1.5;
+        ag.position.x = ag.userData.baseX + Math.sin(ph) * 0.8;
         ag.position.y = Math.abs(Math.sin(ph * 4)) * 0.12; // kleines Hoppeln
         ag.rotation.y = Math.cos(ph) > 0 ? 0 : Math.PI; // Richtung wechseln
       });
