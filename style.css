@@ -1139,3 +1139,23 @@ body.shake { animation: screen-shake 0.35s ease; }
 .daily-goal-fill { height: 100%; width: 0%; background: linear-gradient(#7ed957,#4caf50); transition: width 0.4s; }
 .daily-goal-status { font-size: 11px; color: #9fb4c8; }
 .daily-goal-status.done { color: #7ed957; font-weight: bold; }
+
+/* ---------- v8.9: Deko-System ---------- */
+.decor-panel {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: rgba(18,20,26,0.96); border-top: 4px solid #000;
+  padding: 10px; max-height: 42%; overflow-y: auto; z-index: 20;
+}
+.decor-coins { color: #ffd83d; font-size: 14px; margin-bottom: 8px; text-align: center; }
+.decor-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+.decor-card {
+  background: rgba(40,44,52,0.9); border: 3px solid #000; padding: 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer;
+}
+.decor-card:active { transform: scale(0.95); }
+.decor-card.locked { opacity: 0.45; }
+.decor-ic { width: 32px; height: 32px; image-rendering: pixelated; }
+.decor-name { font-size: 11px; color: #e8eef5; text-align: center; }
+.decor-cost { font-size: 10px; color: #ffd83d; }
+#btn-myworld-decor { margin-left: auto; }
+.start-coins { text-align: center; color: #ffd83d; font-size: 13px; margin: 4px 0 8px; font-weight: bold; }

@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 63;
-  var AUDIO_VER = '?v=63';
+  var APP_V = 65;
+  var AUDIO_VER = '?v=65';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -402,6 +402,8 @@
       biome: 'forest',
       difficulty: 'leicht',
       res: { holz: 0, stein: 0, eisen: 0, gold: 0, diamant: 0 },
+      coins: 0,
+      worldDecor: [],
       equip: { schwert: -1, helm: -1, brust: -1, hose: -1, stiefel: -1 },
       house: 1,
       building: null,
@@ -445,6 +447,8 @@
       s.builtProjects = old.builtProjects || {};
       s.worldPlacements = old.worldPlacements || [];
       s.worldAnimals = old.worldAnimals || null;
+      s.coins = typeof old.coins === 'number' ? old.coins : 0;
+      s.worldDecor = old.worldDecor || [];
       if (!s.biome) s.biome = 'forest';
       if (!s.difficulty) s.difficulty = 'leicht';
       if (!s.house || s.house < 1) s.house = 1;
@@ -1690,6 +1694,8 @@
       btn.classList.add('correct', 'bounce');
       state.stats.correct++;
       state.stats.byType[t.type].correct++;
+      state.coins = (state.coins || 0) + (session.firstTry ? 2 : 1);
+      session.coinsEarned = (session.coinsEarned || 0) + (session.firstTry ? 2 : 1);
       reportGoal('tasks', 1);
       reportGoal('answerStreak', null, session.firstTry ? (session.streak + 1) : 0);
 
@@ -2195,7 +2201,7 @@
     $('summary-pig').style.display = petActive('schwein') ? 'flex' : 'none';
 
     $('summary-title').textContent = session.bossDefeated ? session.boss.name + ' besiegt!' : 'Geschafft, ' + state.playerName + '!';
-    $('summary-stats').textContent = '+' + session.xpGained + ' XP  \u00b7  Level ' + levelOf(state.xp);
+    $('summary-stats').textContent = '+' + session.xpGained + ' XP  \u00b7  +' + (session.coinsEarned || 0) + ' M\u00fcnzen  \u00b7  Level ' + levelOf(state.xp);
 
     var hint = '';
     var ns = nextSwordTier();
@@ -2676,6 +2682,49 @@
   // ---------- Meine Welt (3D-Grundst\u00fcck mit gebauten H\u00e4usern) ----------
   var mw3d = null;
 
+  // ---------- Deko-Katalog (mit Münzen kaufen, selbst platzieren) ----------
+  var DECOR_CATALOG = [
+    { id: 'baum', name: 'Baum', coins: 8, icon: 'leaves', build: 'tree' },
+    { id: 'blume_rot', name: 'Rote Blume', coins: 3, icon: 'poppy', build: 'flower', tex: 'poppy' },
+    { id: 'blume_gelb', name: 'Gelbe Blume', coins: 3, icon: 'dandelion', build: 'flower', tex: 'dandelion' },
+    { id: 'busch', name: 'Busch', coins: 5, icon: 'leaves', build: 'bush' },
+    { id: 'zaun', name: 'Zaun-St\u00fcck', coins: 4, icon: 'stripped', build: 'fence' },
+    { id: 'weg', name: 'Weg-St\u00fcck', coins: 2, icon: 'path', build: 'pathtile' },
+    { id: 'laterne', name: 'Laterne', coins: 6, icon: 'lantern', build: 'lamp' }
+  ];
+  function decorById(id) {
+    for (var i = 0; i < DECOR_CATALOG.length; i++) if (DECOR_CATALOG[i].id === id) return DECOR_CATALOG[i];
+    return null;
+  }
+  // Baut ein Deko-Objekt als THREE.Group an Position (0,0,0), relativ
+  function buildDecor(THREE, geo, mat, item) {
+    var g = new THREE.Group();
+    function cube(x, y, z, tex, sx, sy, sz) {
+      var gg = (sx ? new THREE.BoxGeometry(sx, sy, sz) : geo);
+      var c = new THREE.Mesh(gg, mat(tex));
+      c.position.set(x, y, z); c.castShadow = true; g.add(c);
+    }
+    var b = item.build;
+    if (b === 'tree') {
+      cube(0, 1, 0, 'log'); cube(0, 2, 0, 'log'); cube(0, 3, 0, 'log');
+      [[0, 4, 0], [1, 4, 0], [-1, 4, 0], [0, 4, 1], [0, 4, -1], [0, 5, 0]].forEach(function (p) { cube(p[0], p[1], p[2], 'leaves'); });
+    } else if (b === 'bush') {
+      cube(0, 1, 0, 'leaves'); cube(0, 2, 0, 'leaves');
+    } else if (b === 'flower') {
+      cube(0, 1, 0, item.tex, 0.4, 1, 0.4);
+    } else if (b === 'fence') {
+      cube(0, 1.1, 0, 'stripped', 0.3, 1.3, 0.3);
+      cube(0.5, 1.3, 0, 'stripped', 1, 0.15, 0.12);
+      cube(0.5, 0.85, 0, 'stripped', 1, 0.15, 0.12);
+    } else if (b === 'pathtile') {
+      cube(0, 0.5, 0, 'path', 1, 0.08, 1);
+    } else if (b === 'lamp') {
+      cube(0, 1, 0, 'log'); cube(0, 2, 0, 'lantern');
+    }
+    return g;
+  }
+
+
   // Baut ein Minecraft-Mob aus Quadern mit korrektem UV-Netz-Mapping
   // UV-Netz eines Quaders (W breit, H hoch, D tief) ab (u,v) in der Textur:
   //   Anordnung (Minecraft Standard):
@@ -2823,13 +2872,16 @@
     var span = inner + 2 * MW_MARGIN;
     var midx = MW_MARGIN + Math.floor(inner / 2);
     // Grasgrundst\u00fcck, Wege NUR im Innenbereich (Kreuz)
+    var groundMeshes = [];
     for (var gx = 0; gx < span; gx++) {
       for (var gz = 0; gz < span; gz++) {
         var inInner = (gx >= MW_MARGIN && gx < MW_MARGIN + inner && gz >= MW_MARGIN && gz < MW_MARGIN + inner);
         var isPath = inInner && (gx === midx || gz === midx);
         var gcube = new THREE.Mesh(geo, mat(isPath ? 'path' : 'grass_top'));
         gcube.position.set(gx, 0, gz); gcube.receiveShadow = true;
+        gcube.userData.gx = gx; gcube.userData.gz = gz;
         group.add(gcube);
+        groundMeshes.push(gcube);
       }
     }
     // Baum-Helfer
@@ -2853,6 +2905,16 @@
     for (var i = 1; i < span - 1; i += 3) {
       [[i, 1], [i, span - 2], [1, i], [span - 2, i]].forEach(function (t) { addTree(t[0], t[1]); });
     }
+    // Selbst platzierte Deko (Hugo kauft & setzt sie) rendern
+    var decorGroups = [];
+    (state.worldDecor || []).forEach(function (d) {
+      var item = decorById(d.id);
+      if (!item) return;
+      var dg = buildDecor(THREE, geo, mat, item);
+      dg.position.set(d.x, 0, d.z);
+      group.add(dg);
+      decorGroups.push(dg);
+    });
     // gebaute H\u00e4user im Innenbereich (mit Margin-Versatz)
     (state.worldPlacements || []).forEach(function (p) {
       var model = HOUSE_MODELS[p.id] || HOUSE_MODELS.starter;
@@ -2935,7 +2997,9 @@
 
     mw3d = {
       THREE: THREE, renderer: renderer, scene: scene, camera: camera, pivot: pivot,
-      animGroups: animGroups, animT: 0,
+      animGroups: animGroups, animT: 0, group: group, geo: geo, mat: mat,
+      span: span, ground: groundMeshes, raycaster: new THREE.Raycaster(),
+      placingDecor: null,
       rotY: 0.6, rotX: 0.62, auto: true, camDist: span * 1.7, camTarget: span * 1.4
     };
     myWorldInput(canvas);
@@ -2943,21 +3007,56 @@
   }
 
   function myWorldInput(canvas) {
-    var dragging = false, lx = 0, ly = 0;
-    function down(x, y) { dragging = true; if (mw3d) mw3d.auto = false; lx = x; ly = y; }
+    var dragging = false, lx = 0, ly = 0, downX = 0, downY = 0, moved = false;
+    function down(x, y) { dragging = true; moved = false; if (mw3d) mw3d.auto = false; lx = x; ly = y; downX = x; downY = y; }
     function move(x, y) {
       if (!dragging || !mw3d) return;
+      if (Math.abs(x - downX) > 6 || Math.abs(y - downY) > 6) moved = true;
       mw3d.rotY += (x - lx) * 0.01; mw3d.rotX += (y - ly) * 0.01;
       mw3d.rotX = Math.max(0.15, Math.min(1.2, mw3d.rotX)); lx = x; ly = y;
     }
-    function up() { dragging = false; }
+    function up(x, y) {
+      dragging = false;
+      // Tippen (nicht ziehen) im Platzier-Modus -> Deko setzen
+      if (!moved && mw3d && mw3d.placingDecor) tryPlaceDecor(x, y);
+    }
     canvas.addEventListener('mousedown', function (e) { down(e.clientX, e.clientY); });
     window.addEventListener('mousemove', function (e) { move(e.clientX, e.clientY); });
-    window.addEventListener('mouseup', up);
+    window.addEventListener('mouseup', function (e) { up(e.clientX, e.clientY); });
     canvas.addEventListener('touchstart', function (e) { var t = e.touches[0]; down(t.clientX, t.clientY); }, { passive: true });
     canvas.addEventListener('touchmove', function (e) { var t = e.touches[0]; move(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
-    canvas.addEventListener('touchend', up);
+    canvas.addEventListener('touchend', function (e) { var t = e.changedTouches[0]; up(t.clientX, t.clientY); });
   }
+
+  function tryPlaceDecor(clientX, clientY) {
+    if (!mw3d || !mw3d.placingDecor) return;
+    var canvas = mw3d.renderer.domElement;
+    var rect = canvas.getBoundingClientRect();
+    var nx = ((clientX - rect.left) / rect.width) * 2 - 1;
+    var ny = -((clientY - rect.top) / rect.height) * 2 + 1;
+    mw3d.raycaster.setFromCamera({ x: nx, y: ny }, mw3d.camera);
+    var hits = mw3d.raycaster.intersectObjects(mw3d.ground, false);
+    if (!hits.length) return;
+    var g = hits[0].object;
+    var gx = g.userData.gx, gz = g.userData.gz;
+    // schon belegt?
+    var taken = (state.worldDecor || []).some(function (d) { return d.x === gx && d.z === gz; });
+    if (taken) { say('belegt', 'Hier steht schon etwas. Tippe eine freie Stelle an.'); return; }
+    var item = mw3d.placingDecor;
+    state.worldDecor = state.worldDecor || [];
+    state.worldDecor.push({ id: item.id, x: gx, z: gz });
+    saveState();
+    // sofort rendern
+    var dg = buildDecor(mw3d.THREE, mw3d.geo, mw3d.mat, item);
+    dg.position.set(gx, 0, gz);
+    mw3d.group.add(dg);
+    Sound.mine();
+    mw3d.placingDecor = null;
+    var hint = $('myworld-hint');
+    if (hint) hint.textContent = 'Mit dem Finger drehen';
+    renderDecorBar();
+  }
+
 
   function myWorldLoop() {
     if (!mw3d) return;
@@ -3017,7 +3116,7 @@
     $('build-mode-bar').style.display = 'none';
     $('build-canvas').style.display = 'none';
     var hint = $('build-shop-hint');
-    hint.textContent = 'Welches m\u00f6chtest du bauen? (v' + APP_V + ', ' + BLUEPRINTS.length + ' Baupl\u00e4ne)';
+    hint.textContent = 'Welches m\u00f6chtest du bauen?';
     var picker = $('build-picker');
     picker.style.display = 'flex';
     clear(picker);
@@ -3950,6 +4049,8 @@
   // ---------- Start screen ----------
   function renderDailyWidget() {
     var dl = state.daily;
+    var cc = $('start-coins');
+    if (cc) cc.textContent = (state.coins || 0) + ' M\u00fcnzen';
     var g = currentGoal();
     var st = $('daily-streak-text');
     if (st) st.textContent = (dl.streak || 1) + (dl.streak === 1 ? ' Tag' : ' Tage') + ' dabei';
@@ -4049,6 +4150,40 @@
   $('btn-build-back').addEventListener('click', function () { build3dStop(); renderStart(); show('screen-start'); });
   $('btn-start-myworld').addEventListener('click', function () { show('screen-myworld'); myWorldStart(); });
   $('btn-myworld-back').addEventListener('click', function () { myWorldStop(); renderStart(); show('screen-start'); });
+  $('btn-myworld-decor').addEventListener('click', function () {
+    var panel = $('myworld-decor-panel');
+    var open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'block';
+    if (!open) renderDecorBar();
+  });
+  function renderDecorBar() {
+    $('decor-coin-count').textContent = state.coins || 0;
+    var list = $('decor-list');
+    if (!list) return;
+    clear(list);
+    DECOR_CATALOG.forEach(function (item) {
+      var card = el('div', 'decor-card');
+      var ic = el('img', 'decor-ic');
+      ic.src = BUILD3D_DATA[item.icon] || '';
+      card.appendChild(ic);
+      card.appendChild(el('div', 'decor-name', item.name));
+      card.appendChild(el('div', 'decor-cost', item.coins + ' M\u00fcnzen'));
+      var afford = (state.coins || 0) >= item.coins;
+      card.classList.toggle('locked', !afford);
+      card.addEventListener('click', function () {
+        if ((state.coins || 0) < item.coins) { say('zuwenig', 'Daf\u00fcr brauchst du mehr M\u00fcnzen. L\u00f6se mehr Aufgaben!'); return; }
+        state.coins -= item.coins;
+        saveState();
+        if (mw3d) mw3d.placingDecor = item;
+        $('myworld-decor-panel').style.display = 'none';
+        var hint = $('myworld-hint');
+        if (hint) hint.textContent = 'Tippe eine freie Stelle an, um ' + item.name + ' zu setzen!';
+        renderDecorBar();
+      });
+      list.appendChild(card);
+    });
+  }
+
 
   $('btn-build-choose').addEventListener('click', function () {
     build3dStop();
@@ -4280,10 +4415,11 @@
 
   $('btn-test-res').addEventListener('click', function () {
     RES_KEYS.forEach(function (k) { state.res[k] = 50; });
+    state.coins = (state.coins || 0) + 50;
     saveState();
     Sound.mine();
     var btn = $('btn-test-res');
-    setBtnLabel('btn-test-res', 'Erledigt! Alle auf 50');
+    setBtnLabel('btn-test-res', 'Erledigt! +50 & 50 Münzen');
     setTimeout(function () { setBtnLabel('btn-test-res', 'Test: +50 Rohstoffe'); }, 1500);
   });
 

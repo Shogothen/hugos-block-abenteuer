@@ -9,7 +9,7 @@
 <title>Hugos Block-Abenteuer</title>
 <link rel="icon" type="image/png" href="icon-180.png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="style.css?v=63">
+<link rel="stylesheet" href="style.css?v=65">
 </head>
 <body>
 
@@ -31,6 +31,7 @@
     </div>
     <div id="start-equip" class="start-equip"></div>
     <div id="res-start" class="res-bar"></div>
+    <div id="start-coins" class="start-coins">0 Münzen</div>
 
     <div id="daily-widget" class="daily-widget">
       <div class="daily-streak">
@@ -243,10 +244,15 @@
   <div class="build-bar">
     <button id="btn-myworld-back" class="mc-btn small"><img class="btn-ico" src="assets/minecraft/mobs/steve_face.png" alt=""><span>Zurück</span></button>
     <div id="myworld-title" class="myworld-title">Meine Welt</div>
+    <button id="btn-myworld-decor" class="mc-btn small"><img class="btn-ico" src="assets/minecraft/build/leaves_oak_green.png" alt=""><span>Deko</span></button>
   </div>
   <div id="myworld-wrap" class="build3d-wrap">
     <canvas id="myworld-canvas"></canvas>
     <div id="myworld-hint" class="build3d-hint">Mit dem Finger drehen</div>
+  </div>
+  <div id="myworld-decor-panel" class="decor-panel" style="display:none">
+    <div class="decor-coins">Münzen: <span id="decor-coin-count">0</span></div>
+    <div id="decor-list" class="decor-list"></div>
   </div>
   <div id="myworld-empty" class="myworld-empty" style="display:none">
     Hier erscheinen deine Bauwerke! Geh zu "Bauen" und bau dein erstes Haus.
@@ -427,6 +433,6 @@
   </div>
 </div>
 
-<script src="app.js?v=63"></script>
+<script src="app.js?v=65"></script>
 </body>
 </html>
