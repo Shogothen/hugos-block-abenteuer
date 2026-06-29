@@ -7,8 +7,8 @@
 
 (function () {
   'use strict';
-  var APP_V = 60;
-  var AUDIO_VER = '?v=60';
+  var APP_V = 61;
+  var AUDIO_VER = '?v=61';
 
   // ---------- Assets ----------
   var A = 'assets/minecraft/';
@@ -407,7 +407,7 @@
       seenBosses: {},
       settings: { sound: true, autoSpeak: true, dailyLimit: 0 },
       seen: { biomes: { forest: true }, pets: {}, trophies: {} },
-      daily: { date: '', rounds: 0 },
+      daily: { date: '', rounds: 0, streak: 0, lastPlayDay: '', goalId: '', goalProgress: 0, goalDone: false, goalClaimed: false },
       playerName: 'Hugo',
       stats: { answered: 0, correct: 0, byType: {}, sessions: 0, bestStreak: 0, bossesDefeated: 0 },
       mistakes: []
@@ -432,7 +432,7 @@
       s.seen.biomes = s.seen.biomes || { forest: true };
       s.seen.pets = s.seen.pets || {};
       s.seen.trophies = s.seen.trophies || {};
-      s.daily = old.daily || { date: '', rounds: 0 };
+      s.daily = Object.assign({ date: '', rounds: 0, streak: 0, lastPlayDay: '', goalId: '', goalProgress: 0, goalDone: false, goalClaimed: false }, old.daily || {});
       s.buildProject = old.buildProject || null;
       s.builtProjects = old.builtProjects || {};
       s.worldPlacements = old.worldPlacements || [];
@@ -464,6 +464,88 @@
   }
 
   var state = loadState();
+
+  // ---------- Tagesziel & Streak (sanft, kein Frust) ----------
+  var DAILY_GOALS = [
+    { id: 'tasks10', text: 'L\u00f6se 10 Aufgaben', target: 10, metric: 'tasks', reward: { res: 'eisen', amount: 3 } },
+    { id: 'tasks20', text: 'L\u00f6se 20 Aufgaben', target: 20, metric: 'tasks', reward: { res: 'gold', amount: 2 } },
+    { id: 'boss1', text: 'Besiege einen Boss', target: 1, metric: 'boss', reward: { res: 'diamant', amount: 1 } },
+    { id: 'streak5', text: '5 richtige hintereinander', target: 5, metric: 'answerStreak', reward: { res: 'holz', amount: 6 } },
+    { id: 'perfect', text: 'Eine Runde ohne Fehler', target: 1, metric: 'perfectRound', reward: { res: 'gold', amount: 3 } },
+    { id: 'tasks15', text: 'L\u00f6se 15 Aufgaben', target: 15, metric: 'tasks', reward: { res: 'eisen', amount: 2, also: { res: 'gold', amount: 1 } } }
+  ];
+  function todayKey() {
+    var d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+  function daysBetween(k1, k2) {
+    if (!k1 || !k2) return 99;
+    var a = k1.split('-').map(Number), b = k2.split('-').map(Number);
+    var d1 = new Date(a[0], a[1] - 1, a[2]), d2 = new Date(b[0], b[1] - 1, b[2]);
+    return Math.round((d2 - d1) / 86400000);
+  }
+  function goalForDay(key) {
+    var seed = key.split('-').reduce(function (a, b) { return a + parseInt(b, 10); }, 0);
+    return DAILY_GOALS[seed % DAILY_GOALS.length];
+  }
+  // Beim App-Start / Tageswechsel aufrufen
+  function refreshDaily() {
+    var tk = todayKey();
+    var dl = state.daily;
+    if (dl.date !== tk) {
+      // neuer Tag: Streak sanft fortführen, neues Tagesziel
+      if (dl.lastPlayDay) {
+        // jeder neue gespielte Tag zählt; verpasste Tage brechen nie
+        dl.streak = (dl.streak || 0) + 1;
+      } else {
+        dl.streak = 1;
+      }
+      dl.lastPlayDay = tk;
+      dl.date = tk;
+      dl.rounds = 0;
+      dl.goalId = goalForDay(tk).id;
+      dl.goalProgress = 0;
+      dl.goalDone = false;
+      dl.goalClaimed = false;
+      saveState();
+    }
+  }
+  function currentGoal() {
+    var g = DAILY_GOALS.filter(function (x) { return x.id === state.daily.goalId; })[0];
+    return g || DAILY_GOALS[0];
+  }
+  // Fortschritt für eine Metrik melden
+  function reportGoal(metric, amount, absoluteValue) {
+    var dl = state.daily;
+    if (dl.goalDone) return;
+    var g = currentGoal();
+    if (g.metric !== metric) return;
+    if (typeof absoluteValue === 'number') {
+      dl.goalProgress = Math.min(g.target, absoluteValue);
+    } else {
+      dl.goalProgress = Math.min(g.target, (dl.goalProgress || 0) + (amount || 1));
+    }
+    if (dl.goalProgress >= g.target) {
+      dl.goalDone = true;
+      grantGoalReward(g);
+    }
+    saveState();
+  }
+  function grantGoalReward(g) {
+    var r = g.reward;
+    if (r.res) { state.res[r.res] = (state.res[r.res] || 0) + r.amount; }
+    if (r.also && r.also.res) { state.res[r.also.res] = (state.res[r.also.res] || 0) + r.also.amount; }
+    state.daily.goalClaimed = true;
+    saveState();
+    // Feier-Moment
+    if (typeof Sound !== 'undefined' && Sound.levelup) Sound.levelup();
+    var rewardText = r.res ? (r.amount + ' ' + RES[r.res].name) : '';
+    if (r.also) rewardText += ' und ' + r.also.amount + ' ' + RES[r.also.res].name;
+    if (typeof say === 'function') say('tagesziel', 'Tagesziel geschafft! Du bekommst ' + rewardText + '!');
+    if (typeof renderResBar === 'function') { renderResBar('res-start'); renderResBar('res-practice'); }
+    if (typeof renderDailyWidget === 'function') renderDailyWidget();
+  }
+
 
   function levelOf(xp) { return Math.floor(xp / XP_PER_LEVEL) + 1; }
   function xpInLevel(xp) { return xp % XP_PER_LEVEL; }
@@ -1375,6 +1457,8 @@
       earnedRes: {},
       xpGained: 0,
       streak: 0,
+      mistakeCount: 0,
+      answeredCount: 0,
       pendingLevelUp: null,
       firstTry: true,
       greet: true,
@@ -1589,6 +1673,7 @@
     var correct = (opt === t.correct);
 
     state.stats.answered++;
+    session.answeredCount++;
     if (!state.stats.byType[t.type]) state.stats.byType[t.type] = { answered: 0, correct: 0 };
     state.stats.byType[t.type].answered++;
 
@@ -1597,6 +1682,8 @@
       btn.classList.add('correct', 'bounce');
       state.stats.correct++;
       state.stats.byType[t.type].correct++;
+      reportGoal('tasks', 1);
+      reportGoal('answerStreak', null, session.firstTry ? (session.streak + 1) : 0);
 
       if (session.firstTry) {
         session.streak++;
@@ -1680,6 +1767,7 @@
       btn.disabled = true;
       session.firstTry = false;
       session.streak = 0;
+      session.mistakeCount++;
       Sound.wrong();
       var shielded = false;
       if (session.shieldAvailable && !session.shieldUsed) {
@@ -1754,6 +1842,7 @@
   function bossDefeated() {
     session.bossDefeated = true;
     state.stats.bossesDefeated++;
+    reportGoal('boss', 1);
     var loot = bossLoot();
     var xpGain = bossXp(session.boss);
     state.xp += xpGain;
@@ -2052,9 +2141,12 @@
 
   // ---------- Summary ----------
   function dailyTick() {
-    var today = new Date().toISOString().slice(0, 10);
-    if (state.daily.date !== today) { state.daily.date = today; state.daily.rounds = 0; }
+    refreshDaily();
     state.daily.rounds++;
+    // Perfekte Runde (kein Fehler in dieser Session)?
+    if (session && session.mistakeCount === 0 && session.answeredCount > 0) {
+      reportGoal('perfectRound', 1);
+    }
     saveState();
   }
   function pauseDue() {
@@ -2476,6 +2568,7 @@
     var placed = state.buildProject.placedSteps || 0;
     if (placed >= b3d.steps.length) return;
     state.buildProject.placedSteps = placed + 1;
+    reportGoal('build', 1);
     saveState();
     Sound.mine();
     var done = state.buildProject.placedSteps >= b3d.steps.length;
@@ -3835,6 +3928,33 @@
   setInterval(spawnPetal, 1900);
 
   // ---------- Start screen ----------
+  function renderDailyWidget() {
+    var dl = state.daily;
+    var g = currentGoal();
+    var st = $('daily-streak-text');
+    if (st) st.textContent = (dl.streak || 1) + (dl.streak === 1 ? ' Tag' : ' Tage') + ' dabei';
+    var gt = $('daily-goal-text');
+    if (gt) gt.textContent = 'Heute: ' + g.text;
+    var fill = $('daily-goal-fill');
+    if (fill) {
+      var pct = Math.min(100, Math.round((dl.goalProgress || 0) / g.target * 100));
+      fill.style.width = pct + '%';
+    }
+    var status = $('daily-goal-status');
+    if (status) {
+      if (dl.goalDone) {
+        var r = g.reward;
+        var rewardText = r.res ? ('+' + r.amount + ' ' + RES[r.res].name) : 'Belohnung';
+        if (r.also) rewardText += ' +' + r.also.amount + ' ' + RES[r.also.res].name;
+        status.textContent = 'Geschafft! ' + rewardText;
+        status.className = 'daily-goal-status done';
+      } else {
+        status.textContent = (dl.goalProgress || 0) + ' / ' + g.target;
+        status.className = 'daily-goal-status';
+      }
+    }
+  }
+
   function renderStart() {
     applyMenuBadges();
     buildPanorama($('panorama-start'));
@@ -3843,6 +3963,7 @@
     $('start-level').textContent = 'Level ' + lvl + '  \u00b7  ' + state.xp + ' XP  \u00b7  ' + totalHearts() + ' Herzen';
     $('start-pickaxe').src = pickaxeForLevel(lvl).src;
     renderResBar('res-start');
+    renderDailyWidget();
 
     var eq = $('start-equip');
     clear(eq);
@@ -4157,6 +4278,7 @@
   $('btn-parent-back').addEventListener('click', function () { renderStart(); show('screen-start'); });
 
   // ---------- Init ----------
+  refreshDaily();
   checkTrophies();
   pendingCeremonies = [];
   renderStart();

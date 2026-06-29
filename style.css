@@ -1121,3 +1121,21 @@ body.shake { animation: screen-shake 0.35s ease; }
   max-width: 420px; margin: 40px auto; text-align: center;
   font-size: 16px; color: #cfe8ff; text-shadow: 1px 1px 0 #000; line-height: 1.5; padding: 0 20px;
 }
+
+/* ---------- v8.6: Tagesziel & Streak ---------- */
+.daily-widget {
+  display: flex; gap: 10px; align-items: stretch; margin: 8px 0;
+  background: rgba(20,22,28,0.55); border: 3px solid #000; padding: 8px;
+}
+.daily-streak {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; min-width: 70px; border-right: 2px solid rgba(255,255,255,0.15); padding-right: 8px;
+}
+.daily-flame { width: 28px; height: 28px; image-rendering: pixelated; }
+#daily-streak-text { font-size: 11px; color: #ffd83d; text-align: center; line-height: 1.1; }
+.daily-goal { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.daily-goal-text { font-size: 13px; color: #cfe8ff; }
+.daily-goal-bar { height: 12px; background: #1a1c22; border: 2px solid #000; overflow: hidden; }
+.daily-goal-fill { height: 100%; width: 0%; background: linear-gradient(#7ed957,#4caf50); transition: width 0.4s; }
+.daily-goal-status { font-size: 11px; color: #9fb4c8; }
+.daily-goal-status.done { color: #7ed957; font-weight: bold; }
